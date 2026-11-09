@@ -1,0 +1,78 @@
+'use client';
+import {useMemo,useState} from 'react';
+import Link from 'next/link';
+
+type Kind='Wohnung'|'Haus'|'Gewerbe';
+type Step=0|1|2|3;
+const euro=(n:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(n);
+const clamp=(v:number,min:number,max:number)=>Math.min(max,Math.max(min,Number.isFinite(v)?v:min));
+export default function Konfigurator(){
+ const [step,setStep]=useState<Step>(0);
+ const [kind,setKind]=useState<Kind>('Wohnung');
+ const [rooms,setRooms]=useState(3);
+ const [entrances,setEntrances]=useState(1);
+ const [terrace,setTerrace]=useState(0);
+ const [windows,setWindows]=useState(2);
+ const [levels,setLevels]=useState(1);
+ const [pets,setPets]=useState(false);
+ const [photo,setPhoto]=useState(true);
+ const [fire,setFire]=useState(false);
+ const [water,setWater]=useState(false);
+ const [outside,setOutside]=useState(false);
+ const [keypad,setKeypad]=useState(true);
+ const [sirenOutside,setSirenOutside]=useState(false);
+ const [mount,setMount]=useState(false);
+ const [zip,setZip]=useState('');
+ const [color,setColor]=useState<'Weiß'|'Schwarz'>('Weiß');
+ const [email,setEmail]=useState('');
+ const [sent,setSent]=useState(false);
+ const entryCount=entrances+terrace+windows;
+ const recommend=useMemo(()=>{
+   const detectors=clamp(Math.ceil(rooms*.65)+Math.max(0,levels-1),1,30);
+   const r=[
+    {name:'Kompatible Ajax-Zentrale',quantity:1,detail:photo?'Hub mit Unterstützung für Fotoverifizierung':'Hub passend zum gewählten Sicherheitsumfang',kind:'required'},
+    {name:photo?'Bewegungsmelder mit Fotoverifizierung':'Bewegungsmelder',quantity:detectors,detail:pets?'Haustierverträgliches Modell passend zu Größe und Gewicht auswählen':'Für Zugangswege und Hauptbereiche',kind:'required'},
+    {name:'Öffnungsmelder',quantity:entryCount,detail:'Für die angegebenen Türen und erreichbaren Fenster',kind:'required'},
+    {name:'Innensirene',quantity:1,detail:'Akustische Alarmierung im Gebäude',kind:'required'},
+    ...(keypad?[{name:'Bedienteil',quantity:1,detail:'Bedienung auch ohne Smartphone',kind:'optional'}]:[]),
+    ...(sirenOutside?[{name:'Außensirene',quantity:1,detail:'Montageort und lokale Vorgaben prüfen',kind:'optional'}]:[]),
+    ...(fire?[{name:'Ajax-Brandmelder',quantity:Math.max(1,levels),detail:'Keine automatische Erfüllung gesetzlicher Rauchwarnmelderpflichten zugesichert',kind:'optional'}]:[]),
+    ...(water?[{name:'Wassermelder',quantity:1,detail:'Zum Beispiel Küche oder Hauswirtschaftsraum',kind:'optional'}]:[]),
+    ...(outside?[{name:'Außenbewegungsmelder',quantity:1,detail:'Außenbereich vor Ort beurteilen',kind:'optional'}]:[])
+   ];
+   return r;
+ },[rooms,levels,photo,entryCount,pets,keypad,sirenOutside,fire,water,outside]);
+ const number=(name:string,value:number,set:(n:number)=>void,min=0,max=30)=><div className="countLine"><label htmlFor={name}>{name}</label><div className="counter"><button type="button" aria-label={name+' reduzieren'} onClick={()=>set(clamp(value-1,min,max))}>−</button><input id={name} aria-label={name} type="number" min={min} max={max} value={value} onChange={e=>set(clamp(Number(e.target.value),min,max))}/><button type="button" aria-label={name+' erhöhen'} onClick={()=>set(clamp(value+1,min,max))}>+</button></div></div>;
+ const toggle=(name:string,explain:string,value:boolean,set:(v:boolean)=>void)=><label className="choice"><input type="checkbox" checked={value} onChange={e=>set(e.target.checked)}/><span><strong>{name}</strong><small>{explain}</small></span></label>;
+ return <main className="wrap configPage">
+ <div className="nav"><Link className="brand" href="/">◈ SICHERE <span className="accent">NACHT</span></Link><span>Dein Sicherheitsberater</span></div>
+ <p className="accent">INDIVIDUELLE AJAX-SICHERHEIT</p><h1>In wenigen Schritten zur passenden Alarmanlage.</h1>
+ <p>Du beschreibst dein Zuhause. Wir stellen eine sinnvolle erste Sicherheitsausstattung zusammen. Ohne Rätselraten bei Hubs und Meldern.</p>
+ <div className="progress" aria-label={'Schritt '+(step+1)+' von 4'}>{['Objekt','Zugänge','Schutz & Service','Ergebnis'].map((s,i)=><div key={s} className={i<=step?'active':''}><b>{i+1}</b><span>{s}</span></div>)}</div>
+ <div className="grid configGrid"><section className="card configForm">
+ {step===0&&<><h2>Was möchtest du schützen?</h2><div className="kindGrid">{(['Wohnung','Haus','Gewerbe'] as Kind[]).map(k=><button key={k} className={'kind '+(kind===k?'selected':'')} onClick={()=>setKind(k)}>{k==='Wohnung'?'▦':k==='Haus'?'⌂':'▤'}<strong>{k}</strong></button>)}</div>{number('Zu sichernde Räume',rooms,setRooms,1)}{number('Etagen',levels,setLevels,1,8)}<p className="note">Ein Raum braucht nicht automatisch einen eigenen Bewegungsmelder. Wir berücksichtigen die wichtigen Laufwege.</p></>}
+ {step===1&&<><h2>Wo gibt es mögliche Zugänge?</h2>{number('Eingangstüren',entrances,setEntrances)}{number('Terrassen- und Balkontüren',terrace,setTerrace)}{number('Erreichbare Fenster',windows,setWindows)}<p className="note">Zähle hier nur Fenster, die du tatsächlich mit Öffnungskontakten sichern möchtest. Glasbruch- und Außenabsicherung sind zusätzliche Optionen.</p></>}
+ {step===2&&<><h2>Was ist dir wichtig?</h2>
+ {toggle('Fotoverifizierung','Bei Alarm Bilder durch geeignete MotionCam-Melder erhalten',photo,setPhoto)}
+ {toggle('Haustiere im Haushalt','Wir berücksichtigen geeignete Bewegungsmelder',pets,setPets)}
+ {toggle('Brandwarnung','Brandmelder als zusätzliche Empfehlung',fire,setFire)}
+ {toggle('Wasserschutz','Wassermelder etwa für Küche oder Waschküche',water,setWater)}
+ {toggle('Außenbereich sichern','Außenmelder nach Prüfung der Gegebenheiten',outside,setOutside)}
+ {toggle('Bedienteil','Alarmanlage zusätzlich per Code bedienen',keypad,setKeypad)}
+ {toggle('Außensirene','Zusätzliche optische und akustische Abschreckung',sirenOutside,setSirenOutside)}
+ <h3>Gerätefarbe</h3><div className="row">{(['Weiß','Schwarz'] as const).map(c=><button key={c} className={'button '+(color===c?'':'secondary')} onClick={()=>setColor(c)}>{c}</button>)}</div>
+ <h3>Installation</h3>{toggle('Professionelle Montage (+199 € brutto)','Optional, zunächst nur in Hamburg und Umgebung',mount,setMount)}
+ {mount&&<><label htmlFor="zip">Postleitzahl des Montageorts</label><input id="zip" inputMode="numeric" placeholder="z. B. 20095" maxLength={5} value={zip} onChange={e=>setZip(e.target.value.replace(/\D/g,''))}/><p className="note">Die Verfügbarkeit für deine PLZ bestätigen wir vor einer verbindlichen Buchung. Eine automatische PLZ-Freigabe ist noch nicht aktiv.</p></>}
+ </>}
+ {step===3&&<><h2>Dein persönlicher Sicherheitsplan</h2><p>Diese Zusammenstellung ist eine erste Empfehlung. Wir prüfen vor dem Verkauf die konkrete Kompatibilität, Platzierung und Anzahl der Geräte.</p><div className="recommendations">{recommend.filter(x=>x.quantity>0).map((x,i)=><div className="rec" key={i}><strong>{x.quantity} × {x.name}</strong><small>{x.detail}</small></div>)}</div>
+ <div className="card cost"><p>Gerätefarbe: {color}</p><p>Installation: {mount?euro(199)+' brutto, vorbehaltlich Montagegebietsprüfung':'Selbstmontage'}</p><h3>Gerätegesamtpreis folgt nach Artikelzuordnung</h3><p className="note">Der endgültige Bruttopreis inklusive 19 % MwSt. wird erst angezeigt, wenn die einzelnen Produkte mit der aktuellen SECPLAN-Preisliste verknüpft und geprüft sind.</p></div>
+ <label htmlFor="email">Optional: E-Mail für die spätere Beratung</label><input id="email" type="email" placeholder="deine@email.de" value={email} onChange={e=>setEmail(e.target.value)}/><p className="note">Noch kein E-Mail-Versand eingerichtet. Deine Eingaben werden nicht an einen Server übermittelt.</p>
+ <button type="button" className="button secondary" onClick={()=>{const summary='SICHERE NACHT – Unverbindliche Planung\nObjekt: '+kind+'\nRäume: '+rooms+'; Etagen: '+levels+'; Zugänge: '+entryCount+'\nFarbe: '+color+'\n'+recommend.map(x=>x.quantity+' x '+x.name).join('\n')+'\nMontage: '+(mount?'199 € brutto, PLZ '+zip+' (vorbehaltlich Prüfung)':'Selbstmontage');navigator.clipboard?.writeText(summary).then(()=>setSent(true)).catch(()=>setSent(false));}}>{sent?'Zusammenstellung kopiert':'Zusammenstellung kopieren'}</button>
+ <p className="note">Bestellung und Bezahlung werden nach Freigabe des vollständigen Produktkatalogs aktiviert.</p></>}
+ <div className="row wizardNav">{step>0&&<button type="button" className="button secondary" onClick={()=>setStep(s=>(s-1) as Step)}>Zurück</button>}{step<3&&<button type="button" className="button" onClick={()=>setStep(s=>(s+1) as Step)}>Weiter →</button>}</div>
+ </section><aside className="card overview"><div className="accent">DEIN SICHERHEITSPLAN</div><h2>{kind} · {rooms} Räume</h2><p>{levels} {levels===1?'Etage':'Etagen'} · {entryCount} Zugänge</p><hr/><h3>Aktuell empfohlen</h3>{recommend.filter(x=>x.quantity>0).map((x,i)=><p key={i}>{x.quantity} × {x.name}</p>)}<hr/><p>Montage: {mount?euro(199)+' brutto (auf Anfrage)':'nicht ausgewählt'}</p><p className="note">Automatische Planungshilfe, keine sicherheitstechnische Abnahme. Keine verbindlichen Produktpreise in dieser Vorschau.</p></aside></div>
+ <style jsx>{`
+ .configPage{padding-bottom:80px}.configPage h1{font-size:clamp(32px,5vw,58px);margin:20px 0}.progress{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:38px 0 22px}.progress>div{display:flex;align-items:center;gap:9px;color:#9eacbc;font-size:13px}.progress b{display:grid;place-items:center;width:30px;height:30px;border:1px solid #50657a;border-radius:50%}.progress .active{color:#86e8b5}.progress .active b{background:#155d53;border-color:#86e8b5}.configGrid{grid-template-columns:minmax(0,1.6fr) minmax(260px,1fr)}.configForm h2{margin-top:0}.kindGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.kind{background:#182b43;border:1px solid #344962;color:white;border-radius:12px;padding:26px 10px;display:flex;flex-direction:column;gap:12px;align-items:center;font-size:28px;cursor:pointer}.kind strong{font-size:15px}.kind.selected{background:#13483e;border-color:#75e4b0}.countLine{display:flex;align-items:center;justify-content:space-between;gap:20px;border-bottom:1px solid #294158;padding:15px 0}.countLine label{margin:0}.counter{display:flex;align-items:center;gap:6px}.counter input{width:62px;text-align:center}.counter button{border:1px solid #3b5570;color:white;background:#172b43;border-radius:8px;padding:10px 13px;cursor:pointer}.choice{display:flex;gap:12px;align-items:start;border:1px solid #304964;border-radius:10px;padding:13px;cursor:pointer;font-weight:normal}.choice input{margin-top:4px;flex-shrink:0}.choice strong{display:block}.choice small,.rec small{display:block;color:#bdcddd;margin-top:4px;line-height:1.5}.wizardNav{margin-top:30px;justify-content:flex-end}.overview{align-self:start;position:sticky;top:20px}.overview p{margin:8px 0}.recommendations{margin:22px 0}.rec{padding:12px 0;border-bottom:1px solid #304964}.cost{background:#09182a}.note{font-size:13px}.configForm .button{margin-top:4px}@media(max-width:760px){.configGrid{grid-template-columns:1fr}.overview{position:static}.progress span{display:none}.progress>div{justify-content:center}.kind{padding:18px 5px}}
+ `}</style>
+ </main>;
+}
