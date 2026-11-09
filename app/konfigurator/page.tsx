@@ -1,6 +1,11 @@
 'use client';
 import {useMemo,useState} from 'react';
 import Link from 'next/link';
+import rawProducts from '../../products.json';
+type CatalogProduct={sku:string;name:string;priceCents:number;image:string|null};
+const catalog=rawProducts as CatalogProduct[];
+const bySku=new Map(catalog.map(p=>[p.sku,p]));
+const amount=(n:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(n/100);
 
 type Kind='Wohnung'|'Haus'|'Gewerbe';
 type Step=0|1|2|3;
@@ -27,21 +32,30 @@ export default function Konfigurator(){
  const [email,setEmail]=useState('');
  const [sent,setSent]=useState(false);
  const entryCount=entrances+terrace+windows;
- const recommend=useMemo(()=>{
-   const detectors=clamp(Math.ceil(rooms*.65)+Math.max(0,levels-1),1,30);
-   const r=[
-    {name:'Kompatible Ajax-Zentrale',quantity:1,detail:photo?'Hub mit Unterstützung für Fotoverifizierung':'Hub passend zum gewählten Sicherheitsumfang',kind:'required'},
-    {name:photo?'Bewegungsmelder mit Fotoverifizierung':'Bewegungsmelder',quantity:detectors,detail:pets?'Haustierverträgliches Modell passend zu Größe und Gewicht auswählen':'Für Zugangswege und Hauptbereiche',kind:'required'},
-    {name:'Öffnungsmelder',quantity:entryCount,detail:'Für die angegebenen Türen und erreichbaren Fenster',kind:'required'},
-    {name:'Innensirene',quantity:1,detail:'Akustische Alarmierung im Gebäude',kind:'required'},
-    ...(keypad?[{name:'Bedienteil',quantity:1,detail:'Bedienung auch ohne Smartphone',kind:'optional'}]:[]),
-    ...(sirenOutside?[{name:'Außensirene',quantity:1,detail:'Montageort und lokale Vorgaben prüfen',kind:'optional'}]:[]),
-    ...(fire?[{name:'Ajax-Brandmelder',quantity:Math.max(1,levels),detail:'Keine automatische Erfüllung gesetzlicher Rauchwarnmelderpflichten zugesichert',kind:'optional'}]:[]),
-    ...(water?[{name:'Wassermelder',quantity:1,detail:'Zum Beispiel Küche oder Hauswirtschaftsraum',kind:'optional'}]:[]),
-    ...(outside?[{name:'Außenbewegungsmelder',quantity:1,detail:'Außenbereich vor Ort beurteilen',kind:'optional'}]:[])
+ const bundle=useMemo(()=>{
+   // Conservative baseline wireless recommendation. Final planning must verify radio range,
+   // installation conditions, compatibility and quantities with the customer.
+   const black=color==='Schwarz';
+   const detectors=clamp(Math.ceil(rooms*0.65)+Math.max(0,levels-1),1,30);
+   const lines:{sku:string;quantity:number;reason:string}[]=[
+    {sku:photo?(black?'38244.40.BL1':'38245.40.WH1'):(black?'38238.40.BL1':'38239.40.WH1'),quantity:1,reason:photo?'Zentrale für Fotoverifizierung':'Ajax-Funkzentrale'},
+    {sku:photo?(black?'119281.310.BL1':'119282.310.WH1'):(black?'38194.09.BL1':'38193.09.WH1'),quantity:detectors,reason:'Bewegungserkennung in wichtigen Laufwegen'},
+    {sku:black?'38098.03.BL1':'38099.03.WH1',quantity:entryCount,reason:'Öffnungskontakte für ausgewählte Zugänge'},
+    {sku:black?'38110.11.BL1':'38111.11.WH1',quantity:1,reason:'Akustische Alarmierung'},
+    ...(keypad?[{sku:black?'38248.12.BL1':'38249.12.WH1',quantity:1,reason:'Bedienung per Tastatur'}]:[]),
+    ...(sirenOutside?[{sku:black?'38179.07.BL1':'38178.07.WH1',quantity:1,reason:'Außensirene; Standort prüfen'}]:[]),
+    ...(fire?[{sku:black?'52251.136.BL1':'52250.136.WH1',quantity:levels,reason:'Zusätzliche Brandwarnung; Rauchwarnmelderpflicht separat prüfen'}]:[]),
+    ...(water?[{sku:black?'38254.08.BL1':'38255.08.WH1',quantity:1,reason:'Zusätzlicher Wasserschutz'}]:[]),
+    ...(outside?[{sku:'38197.33.WH1',quantity:1,reason:'Außenmelder; Eignung am Objekt prüfen'}]:[])
    ];
-   return r;
- },[rooms,levels,photo,entryCount,pets,keypad,sirenOutside,fire,water,outside]);
+   return lines.filter(l=>l.quantity>0).map(l=>({...l,product:bySku.get(l.sku)}));
+ },[rooms,levels,photo,entryCount,keypad,sirenOutside,fire,water,outside,color]);
+ const hardwareCents=bundle.reduce((sum,l)=>sum+(l.product?.priceCents??0)*l.quantity,0);
+ const allPriced=bundle.every(l=>!!l.product);
+ const installationCents=mount?19900:0;
+ const totalCents=hardwareCents+installationCents;
+ const vatCents=Math.round(totalCents*19/119);
+ const recommend=bundle.map(l=>({name:l.product?.name??'Artikelzuordnung ausstehend',quantity:l.quantity,detail:l.reason,sku:l.sku,image:l.product?.image,unitPrice:l.product?.priceCents??0}));
  const number=(name:string,value:number,set:(n:number)=>void,min=0,max=30)=><div className="countLine"><label htmlFor={name}>{name}</label><div className="counter"><button type="button" aria-label={name+' reduzieren'} onClick={()=>set(clamp(value-1,min,max))}>−</button><input id={name} aria-label={name} type="number" min={min} max={max} value={value} onChange={e=>set(clamp(Number(e.target.value),min,max))}/><button type="button" aria-label={name+' erhöhen'} onClick={()=>set(clamp(value+1,min,max))}>+</button></div></div>;
  const toggle=(name:string,explain:string,value:boolean,set:(v:boolean)=>void)=><label className="choice"><input type="checkbox" checked={value} onChange={e=>set(e.target.checked)}/><span><strong>{name}</strong><small>{explain}</small></span></label>;
  return <main className="wrap configPage">
@@ -64,15 +78,23 @@ export default function Konfigurator(){
  <h3>Installation</h3>{toggle('Professionelle Montage (+199 € brutto)','Optional, zunächst nur in Hamburg und Umgebung',mount,setMount)}
  {mount&&<><label htmlFor="zip">Postleitzahl des Montageorts</label><input id="zip" inputMode="numeric" placeholder="z. B. 20095" maxLength={5} value={zip} onChange={e=>setZip(e.target.value.replace(/\D/g,''))}/><p className="note">Die Verfügbarkeit für deine PLZ bestätigen wir vor einer verbindlichen Buchung. Eine automatische PLZ-Freigabe ist noch nicht aktiv.</p></>}
  </>}
- {step===3&&<><h2>Dein persönlicher Sicherheitsplan</h2><p>Diese Zusammenstellung ist eine erste Empfehlung. Wir prüfen vor dem Verkauf die konkrete Kompatibilität, Platzierung und Anzahl der Geräte.</p><div className="recommendations">{recommend.filter(x=>x.quantity>0).map((x,i)=><div className="rec" key={i}><strong>{x.quantity} × {x.name}</strong><small>{x.detail}</small></div>)}</div>
- <div className="card cost"><p>Gerätefarbe: {color}</p><p>Installation: {mount?euro(199)+' brutto, vorbehaltlich Montagegebietsprüfung':'Selbstmontage'}</p><h3>Gerätegesamtpreis folgt nach Artikelzuordnung</h3><p className="note">Der endgültige Bruttopreis inklusive 19 % MwSt. wird erst angezeigt, wenn die einzelnen Produkte mit der aktuellen SECPLAN-Preisliste verknüpft und geprüft sind.</p></div>
+ {step===3&&<><h2>Dein persönlicher Sicherheitsplan</h2><p>Konkrete Ajax-Artikel aus unserer Preisliste, inklusive Bruttopreisen. Die endgültige Eignung und Mengenplanung prüfen wir vor der Bestellung.</p><div className="recommendations">{recommend.map((x,i)=><div className="rec recProduct" key={x.sku}><div className="recImage">{x.image?<img src={x.image} alt={x.name} loading="lazy" width="72" height="72"/>:'AJAX'}</div><div><strong>{x.quantity} × {x.name}</strong><small>{x.detail} · Art. {x.sku}</small><small>{amount(x.unitPrice)} pro Stück</small></div><strong className="recAmount">{amount(x.unitPrice*x.quantity)}</strong></div>)}</div>
+ <div className="card cost">
+ <p>Gerätefarbe: {color}</p>
+ <div className="costRow"><span>Komponenten inkl. 19 % MwSt.</span><strong>{amount(hardwareCents)}</strong></div>
+ <div className="costRow"><span>{mount?'Optionale Montage Hamburg & Umgebung (PLZ-Prüfung ausstehend)':'Selbstmontage'}</span><strong>{amount(installationCents)}</strong></div>
+ <div className="costRow costTotal"><span>Gesamt brutto</span><strong>{allPriced?amount(totalCents):'Preisprüfung erforderlich'}</strong></div>
+ <p className="note">Darin enthaltene 19 % MwSt.: {amount(vatCents)}. Unverbindliche Beispielkalkulation vor Versandkosten. Montagepauschale vorbehaltlich Einsatzgebiet und Leistungsumfang.</p>
+ {pets&&<p className="note alert">Haustiere: Bitte Größe und Gewicht sowie die gewählten Melder vor Bestellung individuell prüfen. Keine generelle Haustier-Freigabe.</p>}
+ {kind==='Gewerbe'&&<p className="note alert">Gewerbliche Objekte benötigen ggf. eine gesonderte Risiko- und Versicherungsprüfung.</p>}
+ </div>
  <label htmlFor="email">Optional: E-Mail für die spätere Beratung</label><input id="email" type="email" placeholder="deine@email.de" value={email} onChange={e=>setEmail(e.target.value)}/><p className="note">Noch kein E-Mail-Versand eingerichtet. Deine Eingaben werden nicht an einen Server übermittelt.</p>
- <button type="button" className="button secondary" onClick={()=>{const summary='SICHERE NACHT – Unverbindliche Planung\nObjekt: '+kind+'\nRäume: '+rooms+'; Etagen: '+levels+'; Zugänge: '+entryCount+'\nFarbe: '+color+'\n'+recommend.map(x=>x.quantity+' x '+x.name).join('\n')+'\nMontage: '+(mount?'199 € brutto, PLZ '+zip+' (vorbehaltlich Prüfung)':'Selbstmontage');navigator.clipboard?.writeText(summary).then(()=>setSent(true)).catch(()=>setSent(false));}}>{sent?'Zusammenstellung kopiert':'Zusammenstellung kopieren'}</button>
- <p className="note">Bestellung und Bezahlung werden nach Freigabe des vollständigen Produktkatalogs aktiviert.</p></>}
+ <button type="button" className="button secondary" onClick={()=>{const summary='SICHERE NACHT – Unverbindliche Planung\nObjekt: '+kind+'\nRäume: '+rooms+'; Etagen: '+levels+'; Zugänge: '+entryCount+'\nFarbe: '+color+'\n'+recommend.map(x=>x.quantity+' x '+x.name+' ('+x.sku+'): '+amount(x.unitPrice*x.quantity)).join('\n')+'\nBruttopreis: '+amount(totalCents)+'\nMontage: '+(mount?'199 € brutto, PLZ '+zip+' (vorbehaltlich Prüfung)':'Selbstmontage');navigator.clipboard?.writeText(summary).then(()=>setSent(true)).catch(()=>setSent(false));}}>{sent?'Zusammenstellung kopiert':'Zusammenstellung kopieren'}</button>
+ <p className="note">Die berechneten Preise stammen aus dem importierten Produktkatalog. Checkout und verbindliche technische Freigabe werden separat eingerichtet.</p></>}
  <div className="row wizardNav">{step>0&&<button type="button" className="button secondary" onClick={()=>setStep(s=>(s-1) as Step)}>Zurück</button>}{step<3&&<button type="button" className="button" onClick={()=>setStep(s=>(s+1) as Step)}>Weiter →</button>}</div>
- </section><aside className="card overview"><div className="accent">DEIN SICHERHEITSPLAN</div><h2>{kind} · {rooms} Räume</h2><p>{levels} {levels===1?'Etage':'Etagen'} · {entryCount} Zugänge</p><hr/><h3>Aktuell empfohlen</h3>{recommend.filter(x=>x.quantity>0).map((x,i)=><p key={i}>{x.quantity} × {x.name}</p>)}<hr/><p>Montage: {mount?euro(199)+' brutto (auf Anfrage)':'nicht ausgewählt'}</p><p className="note">Automatische Planungshilfe, keine sicherheitstechnische Abnahme. Keine verbindlichen Produktpreise in dieser Vorschau.</p></aside></div>
+ </section><aside className="card overview"><div className="accent">DEIN SICHERHEITSPLAN</div><h2>{kind} · {rooms} Räume</h2><p>{levels} {levels===1?'Etage':'Etagen'} · {entryCount} Zugänge</p><hr/><h3>Aktuell empfohlen</h3>{recommend.filter(x=>x.quantity>0).map((x,i)=><p key={i}>{x.quantity} × {x.name}</p>)}<hr/><p>Geräte: <strong>{amount(hardwareCents)}</strong></p><p>Montage: {mount?euro(199)+' brutto (auf Anfrage)':'Selbstmontage'}</p><h3 className="accent">{amount(totalCents)} brutto</h3><p className="note">Inklusive 19 % MwSt.; zzgl. Versand. Unverbindliche Planungshilfe, keine sicherheitstechnische Abnahme.</p></aside></div>
  <style jsx>{`
- .configPage{padding-bottom:80px}.configPage h1{font-size:clamp(32px,5vw,58px);margin:20px 0}.progress{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:38px 0 22px}.progress>div{display:flex;align-items:center;gap:9px;color:#9eacbc;font-size:13px}.progress b{display:grid;place-items:center;width:30px;height:30px;border:1px solid #50657a;border-radius:50%}.progress .active{color:#86e8b5}.progress .active b{background:#155d53;border-color:#86e8b5}.configGrid{grid-template-columns:minmax(0,1.6fr) minmax(260px,1fr)}.configForm h2{margin-top:0}.kindGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.kind{background:#182b43;border:1px solid #344962;color:white;border-radius:12px;padding:26px 10px;display:flex;flex-direction:column;gap:12px;align-items:center;font-size:28px;cursor:pointer}.kind strong{font-size:15px}.kind.selected{background:#13483e;border-color:#75e4b0}.countLine{display:flex;align-items:center;justify-content:space-between;gap:20px;border-bottom:1px solid #294158;padding:15px 0}.countLine label{margin:0}.counter{display:flex;align-items:center;gap:6px}.counter input{width:62px;text-align:center}.counter button{border:1px solid #3b5570;color:white;background:#172b43;border-radius:8px;padding:10px 13px;cursor:pointer}.choice{display:flex;gap:12px;align-items:start;border:1px solid #304964;border-radius:10px;padding:13px;cursor:pointer;font-weight:normal}.choice input{margin-top:4px;flex-shrink:0}.choice strong{display:block}.choice small,.rec small{display:block;color:#bdcddd;margin-top:4px;line-height:1.5}.wizardNav{margin-top:30px;justify-content:flex-end}.overview{align-self:start;position:sticky;top:20px}.overview p{margin:8px 0}.recommendations{margin:22px 0}.rec{padding:12px 0;border-bottom:1px solid #304964}.cost{background:#09182a}.note{font-size:13px}.configForm .button{margin-top:4px}@media(max-width:760px){.configGrid{grid-template-columns:1fr}.overview{position:static}.progress span{display:none}.progress>div{justify-content:center}.kind{padding:18px 5px}}
+ .configPage{padding-bottom:80px}.configPage h1{font-size:clamp(32px,5vw,58px);margin:20px 0}.progress{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:38px 0 22px}.progress>div{display:flex;align-items:center;gap:9px;color:#9eacbc;font-size:13px}.progress b{display:grid;place-items:center;width:30px;height:30px;border:1px solid #50657a;border-radius:50%}.progress .active{color:#86e8b5}.progress .active b{background:#155d53;border-color:#86e8b5}.configGrid{grid-template-columns:minmax(0,1.6fr) minmax(260px,1fr)}.configForm h2{margin-top:0}.kindGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.kind{background:#182b43;border:1px solid #344962;color:white;border-radius:12px;padding:26px 10px;display:flex;flex-direction:column;gap:12px;align-items:center;font-size:28px;cursor:pointer}.kind strong{font-size:15px}.kind.selected{background:#13483e;border-color:#75e4b0}.countLine{display:flex;align-items:center;justify-content:space-between;gap:20px;border-bottom:1px solid #294158;padding:15px 0}.countLine label{margin:0}.counter{display:flex;align-items:center;gap:6px}.counter input{width:62px;text-align:center}.counter button{border:1px solid #3b5570;color:white;background:#172b43;border-radius:8px;padding:10px 13px;cursor:pointer}.choice{display:flex;gap:12px;align-items:start;border:1px solid #304964;border-radius:10px;padding:13px;cursor:pointer;font-weight:normal}.choice input{margin-top:4px;flex-shrink:0}.choice strong{display:block}.choice small,.rec small{display:block;color:#bdcddd;margin-top:4px;line-height:1.5}.wizardNav{margin-top:30px;justify-content:flex-end}.overview{align-self:start;position:sticky;top:20px}.overview p{margin:8px 0}.recommendations{margin:22px 0}.rec{padding:12px 0;border-bottom:1px solid #304964}.cost{background:#09182a}.recProduct{display:grid;grid-template-columns:76px 1fr auto;gap:12px;align-items:center}.recImage{width:72px;height:72px;background:#f4f6f9;border-radius:10px;color:#324b5b;display:grid;place-items:center;font-size:12px}.recImage img{width:100%;height:100%;object-fit:contain}.recAmount{white-space:nowrap;color:#88e4b8}.costRow{display:flex;gap:16px;align-items:center;justify-content:space-between;margin:14px 0}.costTotal{border-top:1px solid #486076;padding-top:15px;font-size:22px;color:#88e4b8}.note{font-size:13px}.alert{color:#ffc68c}@media(max-width:560px){.recProduct{grid-template-columns:55px 1fr}.recImage{width:52px;height:52px}.recAmount{grid-column:2}}.configForm .button{margin-top:4px}@media(max-width:760px){.configGrid{grid-template-columns:1fr}.overview{position:static}.progress span{display:none}.progress>div{justify-content:center}.kind{padding:18px 5px}}
  `}</style>
  </main>;
 }
