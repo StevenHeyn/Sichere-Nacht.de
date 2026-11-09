@@ -1,0 +1,3 @@
+import Link from 'next/link';
+export const metadata={title:'Widerrufsrecht | Sichere Nacht'};
+export default function Widerruf(){return <main className="wrap" style={{maxWidth:850}}><Link href="/" className="accent">← Startseite</Link><h1>Widerrufsrecht</h1><p>Für Verbraucher im Fernabsatz können gesetzliche Widerrufsrechte bestehen. Die vollständige, auf das konkrete Sortiment und die Dienstleistungen abgestimmte Widerrufsbelehrung einschließlich Muster-Widerrufsformular und Rücksenderegelungen wird vor Freischaltung des Checkouts ergänzt.</p><p className="note">Noch kein aktiver Onlineverkauf. Diese Vorschauseite ersetzt keine vollständige Widerrufsbelehrung.</p><Link href="/kontakt">Kontakt</Link></main>}
