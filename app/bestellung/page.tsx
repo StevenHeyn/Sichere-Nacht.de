@@ -1,0 +1,3 @@
+import Link from 'next/link';
+export const metadata={title:'Zahlungsstatus | Sichere Nacht'};
+export default function Bestellung(){return <main className="wrap" style={{maxWidth:800,paddingBottom:80}}><Link href="/" className="accent">← Startseite</Link><h1>Vielen Dank!</h1><p>Wenn du gerade den Zahlungsanbieter verlassen hast, prüfen wir den Zahlungsstatus. Eine Bestellung gilt erst als bestätigt, wenn ihre Zahlung und alle erforderlichen Angaben serverseitig verifiziert wurden.</p><p>Eine verbindliche Bestellbestätigung erhältst du nach Abschluss der Einrichtung später über die dafür vorgesehene Bestellverwaltung. Bitte eine Rückleitung auf diese Seite nicht allein als Zahlungsbestätigung werten.</p><Link className="button" href="/shop">Zum Shop</Link></main>}
