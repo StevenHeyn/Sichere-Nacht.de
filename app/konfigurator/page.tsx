@@ -4,6 +4,7 @@ import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {saveCart} from '../../lib/cart';
 import rawProducts from '../../products.json';
+import RoomPlanner,{initialRooms,PlannedRoom} from './room-planner';
 type CatalogProduct={sku:string;name:string;priceCents:number;image:string|null};
 const catalog=rawProducts as CatalogProduct[];
 const bySku=new Map(catalog.map(p=>[p.sku,p]));
@@ -19,6 +20,8 @@ export default function Konfigurator(){
  const [protection,setProtection]=useState<'Basis'|'Komfort'|'Premium'>('Komfort');
  const [kind,setKind]=useState<Kind>('Wohnung');
  const [rooms,setRooms]=useState(3);
+ const [planningMode,setPlanningMode]=useState<'visual'|'simple'>('visual');
+ const [plannedRooms,setPlannedRooms]=useState<PlannedRoom[]>(initialRooms);
  const [entrances,setEntrances]=useState(1);
  const [terrace,setTerrace]=useState(0);
  const [windows,setWindows]=useState(2);
@@ -46,12 +49,17 @@ export default function Konfigurator(){
   if(preset==='safer'){setKind('Haus');setRooms(3);setLevels(1);setEntrances(1);setTerrace(1);setWindows(1);setProtection('Komfort');setKeypad(true);setPhoto(true);}
   if(preset==='safer-plus'){setKind('Haus');setRooms(4);setLevels(1);setEntrances(1);setTerrace(2);setWindows(3);setProtection('Premium');setKeypad(true);setPhoto(true);}
  },[]);
- const entryCount=entrances+terrace+windows;
+ const roomCount=planningMode==='visual'?plannedRooms.length:rooms;
+ const entryDoors=planningMode==='visual'?plannedRooms.reduce((sum,r)=>sum+r.entrances,0):entrances;
+ const terraceDoors=planningMode==='visual'?plannedRooms.reduce((sum,r)=>sum+r.terraces,0):terrace;
+ const windowCount=planningMode==='visual'?plannedRooms.reduce((sum,r)=>sum+r.windows,0):windows;
+ const entryCount=entryDoors+terraceDoors+windowCount;
+ const motionRooms=plannedRooms.filter(r=>r.motion).length;
  const bundle=useMemo(()=>{
    // Conservative baseline wireless recommendation. Final planning must verify radio range,
    // installation conditions, compatibility and quantities with the customer.
    const black=color==='Schwarz';
-   const detectors=clamp(protection==='Basis'?Math.ceil(rooms*0.4):protection==='Premium'?rooms+Math.max(0,levels-1):Math.ceil(rooms*0.65)+Math.max(0,levels-1),1,30);
+   const detectors=planningMode==='visual'?clamp(protection==='Basis'?Math.ceil(motionRooms*0.65):protection==='Premium'?motionRooms:Math.ceil(motionRooms*0.85),0,30):clamp(protection==='Basis'?Math.ceil(rooms*0.4):protection==='Premium'?rooms+Math.max(0,levels-1):Math.ceil(rooms*0.65)+Math.max(0,levels-1),1,30);
    const lines:{sku:string;quantity:number;reason:string}[]=[
     {sku:photo?(black?'38244.40.BL1':'38245.40.WH1'):(black?'38238.40.BL1':'38239.40.WH1'),quantity:1,reason:photo?'Zentrale für Fotoverifizierung':'Ajax-Funkzentrale'},
     {sku:photo?(black?'119281.310.BL1':'119282.310.WH1'):(black?'38194.09.BL1':'38193.09.WH1'),quantity:detectors,reason:'Bewegungserkennung in wichtigen Laufwegen'},
@@ -64,7 +72,7 @@ export default function Konfigurator(){
     ...(outside?[{sku:'38197.33.WH1',quantity:1,reason:'Außenmelder; Eignung am Objekt prüfen'}]:[])
    ];
    return lines.filter(l=>l.quantity>0).map(l=>({...l,product:bySku.get(l.sku)}));
- },[rooms,levels,photo,entryCount,keypad,sirenType,fire,water,outside,color,protection]);
+ },[rooms,levels,photo,entryCount,keypad,sirenType,fire,water,outside,color,protection,planningMode,motionRooms]);
  const hardwareCents=bundle.reduce((sum,l)=>sum+(l.product?.priceCents??0)*l.quantity,0);
  const allPriced=bundle.every(l=>!!l.product);
  const installationCents=mount?19900:0;
@@ -77,10 +85,10 @@ export default function Konfigurator(){
  <div className="nav"><Link className="brand" href="/">◈ SICHERE <span className="accent">NACHT</span></Link><Link href="/warenkorb">Warenkorb ansehen</Link></div>
  <p className="accent">INDIVIDUELLE AJAX-SICHERHEIT</p><h1>In wenigen Schritten zur passenden Alarmanlage.</h1>
  <p>Du beschreibst dein Zuhause. Wir stellen eine sinnvolle erste Sicherheitsausstattung zusammen. Ohne Rätselraten bei Hubs und Meldern.</p>
- <div className="progress" aria-label={'Schritt '+(step+1)+' von 4'}>{['Objekt','Zugänge','Schutz & Service','Ergebnis'].map((s,i)=><div key={s} className={i<=step?'active':''}><b>{i+1}</b><span>{s}</span></div>)}</div>
+ <div className="progress" aria-label={'Schritt '+(step+1)+' von 4'}>{['Objekt','Raumtour','Schutz & Service','Ergebnis'].map((s,i)=><div key={s} className={i<=step?'active':''}><b>{i+1}</b><span>{s}</span></div>)}</div>
  <div className="grid configGrid"><section className="card configForm">
  {step===0&&<><h2>Was möchtest du schützen?</h2><div className="kindGrid">{(['Wohnung','Haus','Gewerbe'] as Kind[]).map(k=><button key={k} className={'kind '+(kind===k?'selected':'')} onClick={()=>setKind(k)}>{k==='Wohnung'?'▦':k==='Haus'?'⌂':'▤'}<strong>{k}</strong></button>)}</div>{number('Zu sichernde Räume',rooms,setRooms,1)}{number('Etagen',levels,setLevels,1,8)}<h3>Schutzstufe</h3><div className="kindGrid">{(['Basis','Komfort','Premium'] as const).map(level=><button type="button" key={level} className={'kind '+(protection===level?'selected':'')} onClick={()=>setProtection(level)} style={{fontSize:17,padding:'16px 8px'}}><strong>{level}</strong><small>{level==='Basis'?'Wichtige Laufwege':level==='Komfort'?'Mehr Bewegungsmelder':'Alle Räume + erweiterter Schutz'}</small></button>)}</div><p className="note">Ein Raum braucht nicht automatisch einen eigenen Bewegungsmelder. Wir berücksichtigen die wichtigen Laufwege.</p></>}
- {step===1&&<><h2>Wo gibt es mögliche Zugänge?</h2>{number('Eingangstüren',entrances,setEntrances)}{number('Terrassen- und Balkontüren',terrace,setTerrace)}{number('Erreichbare Fenster',windows,setWindows)}<div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:20}}><span className="card" style={{padding:12}}>🚪 {entrances} Eingang</span><span className="card" style={{padding:12}}>🌿 {terrace} Terrasse</span><span className="card" style={{padding:12}}>🪟 {windows} Fenster</span></div><p className="note">Zähle hier nur Fenster, die du tatsächlich mit Öffnungskontakten sichern möchtest. Glasbruch- und Außenabsicherung sind zusätzliche Optionen.</p></>}
+ {step===1&&<><h2>Dein Zuhause Raum für Raum</h2><p>Im visuellen Rundgang planst du jeden Raum einzeln. Alternativ kannst du die Anzahl der Zugänge wie bisher direkt eingeben.</p><div className="row" style={{marginBottom:18}}><button type="button" className={'button '+(planningMode==='visual'?'':'secondary')} onClick={()=>setPlanningMode('visual')} aria-pressed={planningMode==='visual'}>⌂ Virtueller Rundgang</button><button type="button" className={'button '+(planningMode==='simple'?'':'secondary')} onClick={()=>setPlanningMode('simple')} aria-pressed={planningMode==='simple'}>Schnelleingabe</button></div>{planningMode==='visual'?<RoomPlanner rooms={plannedRooms} onChange={setPlannedRooms} floors={levels}/>:<>{number('Eingangstüren',entrances,setEntrances)}{number('Terrassen- und Balkontüren',terrace,setTerrace)}{number('Erreichbare Fenster',windows,setWindows)}</>}<div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:20}}><span className="card" style={{padding:12}}>🚪 {entryDoors} Eingänge</span><span className="card" style={{padding:12}}>🌿 {terraceDoors} Terrassentüren</span><span className="card" style={{padding:12}}>🪟 {windowCount} Fenster</span></div><p className="note">Es werden nur die hier ausgewählten Zugänge mit Öffnungskontakten berücksichtigt. Die Planung ist unverbindlich.</p></>}
  {step===2&&<><h2>Was ist dir wichtig?</h2>
  {toggle('Fotoverifizierung','Bei Alarm Bilder durch geeignete MotionCam-Melder erhalten',photo,setPhoto)}
  {toggle('Haustiere im Haushalt','Wir berücksichtigen geeignete Bewegungsmelder',pets,setPets)}
@@ -104,11 +112,11 @@ export default function Konfigurator(){
  {kind==='Gewerbe'&&<p className="note alert">Gewerbliche Objekte benötigen ggf. eine gesonderte Risiko- und Versicherungsprüfung.</p>}
  </div>
  <label htmlFor="email">Optional: E-Mail für die spätere Beratung</label><input id="email" type="email" placeholder="deine@email.de" value={email} onChange={e=>setEmail(e.target.value)}/><p className="note">Noch kein E-Mail-Versand eingerichtet. Deine Eingaben werden nicht an einen Server übermittelt.</p>
- <button type="button" className="button secondary" onClick={()=>{const summary='SICHERE NACHT – Unverbindliche Planung\nObjekt: '+kind+'\nRäume: '+rooms+'; Etagen: '+levels+'; Zugänge: '+entryCount+'\nFarbe: '+color+'\n'+recommend.map(x=>x.quantity+' x '+x.name+' ('+x.sku+'): '+amount(x.unitPrice*x.quantity)).join('\n')+'\nBruttopreis: '+amount(totalCents)+'\nMontage: '+(mount?'199 € brutto, PLZ '+zip+' (vorbehaltlich Prüfung)':'Selbstmontage');navigator.clipboard?.writeText(summary).then(()=>setSent(true)).catch(()=>setSent(false));}}>{sent?'Zusammenstellung kopiert':'Zusammenstellung kopieren'}</button>
+ <button type="button" className="button secondary" onClick={()=>{const summary='SICHERE NACHT – Unverbindliche Planung\nObjekt: '+kind+'\nRäume: '+roomCount+'; Etagen: '+levels+'; Zugänge: '+entryCount+'\nFarbe: '+color+'\n'+recommend.map(x=>x.quantity+' x '+x.name+' ('+x.sku+'): '+amount(x.unitPrice*x.quantity)).join('\n')+'\nBruttopreis: '+amount(totalCents)+'\nMontage: '+(mount?'199 € brutto, PLZ '+zip+' (vorbehaltlich Prüfung)':'Selbstmontage');navigator.clipboard?.writeText(summary).then(()=>setSent(true)).catch(()=>setSent(false));}}>{sent?'Zusammenstellung kopiert':'Zusammenstellung kopieren'}</button>
  <button type="button" className="button" disabled={!allPriced} onClick={()=>{saveCart({items:bundle.map(l=>({sku:l.sku,quantity:l.quantity})),installation:mount,installationZip:zip,source:'konfigurator'});router.push('/warenkorb')}}>Paket in den Warenkorb →</button>
  <p className="note">Die berechneten Preise stammen aus dem importierten Produktkatalog. Checkout und verbindliche technische Freigabe werden separat eingerichtet.</p></>}
  <div className="row wizardNav">{step>0&&<button type="button" className="button secondary" onClick={()=>setStep(s=>(s-1) as Step)}>Zurück</button>}{step<3&&<button type="button" className="button" onClick={()=>setStep(s=>(s+1) as Step)}>Weiter →</button>}</div>
- </section><aside className="card overview"><div className="accent">DEIN SICHERHEITSPLAN</div><h2>{kind} · {rooms} Räume</h2><p>Schutzstufe: {protection}</p><p>{levels} {levels===1?'Etage':'Etagen'} · {entryCount} Zugänge</p><hr/><h3>Aktuell empfohlen</h3>{recommend.filter(x=>x.quantity>0).map((x,i)=><p key={i}>{x.quantity} × {x.name}</p>)}<hr/><p>Geräte: <strong>{amount(hardwareCents)}</strong></p><p>Montage: {mount?euro(199)+' brutto (auf Anfrage)':'Selbstmontage'}</p><h3 className="accent">{amount(totalCents)} brutto</h3><p className="note">Inklusive 19 % MwSt.; zzgl. Versand. Unverbindliche Planungshilfe, keine sicherheitstechnische Abnahme.</p></aside></div>
+ </section><aside className="card overview"><div className="accent">DEIN SICHERHEITSPLAN</div><h2>{kind} · {roomCount} Räume</h2><p>Schutzstufe: {protection}</p><p>{levels} {levels===1?'Etage':'Etagen'} · {entryCount} Zugänge</p><hr/><h3>Aktuell empfohlen</h3>{recommend.filter(x=>x.quantity>0).map((x,i)=><p key={i}>{x.quantity} × {x.name}</p>)}<hr/><p>Geräte: <strong>{amount(hardwareCents)}</strong></p><p>Montage: {mount?euro(199)+' brutto (auf Anfrage)':'Selbstmontage'}</p><h3 className="accent">{amount(totalCents)} brutto</h3><p className="note">Inklusive 19 % MwSt.; zzgl. Versand. Unverbindliche Planungshilfe, keine sicherheitstechnische Abnahme.</p></aside></div>
  <style jsx>{`
  .configPage{padding-bottom:80px}.configPage h1{font-size:clamp(32px,5vw,58px);margin:20px 0}.progress{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:38px 0 22px}.progress>div{display:flex;align-items:center;gap:9px;color:#9eacbc;font-size:13px}.progress b{display:grid;place-items:center;width:30px;height:30px;border:1px solid #50657a;border-radius:50%}.progress .active{color:#86e8b5}.progress .active b{background:#155d53;border-color:#86e8b5}.configGrid{grid-template-columns:minmax(0,1.6fr) minmax(260px,1fr)}.configForm h2{margin-top:0}.kindGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.kind{background:#182b43;border:1px solid #344962;color:white;border-radius:12px;padding:26px 10px;display:flex;flex-direction:column;gap:12px;align-items:center;font-size:28px;cursor:pointer}.kind strong{font-size:15px}.kind.selected{background:#13483e;border-color:#75e4b0}.countLine{display:flex;align-items:center;justify-content:space-between;gap:20px;border-bottom:1px solid #294158;padding:15px 0}.countLine label{margin:0}.counter{display:flex;align-items:center;gap:6px}.counter input{width:62px;text-align:center}.counter button{border:1px solid #3b5570;color:white;background:#172b43;border-radius:8px;padding:10px 13px;cursor:pointer}.choice{display:flex;gap:12px;align-items:start;border:1px solid #304964;border-radius:10px;padding:13px;cursor:pointer;font-weight:normal}.choice input{margin-top:4px;flex-shrink:0}.choice strong{display:block}.choice small,.rec small{display:block;color:#bdcddd;margin-top:4px;line-height:1.5}.wizardNav{margin-top:30px;justify-content:flex-end}.overview{align-self:start;position:sticky;top:20px}.overview p{margin:8px 0}.recommendations{margin:22px 0}.rec{padding:12px 0;border-bottom:1px solid #304964}.cost{background:#09182a}.recProduct{display:grid;grid-template-columns:76px 1fr auto;gap:12px;align-items:center}.recImage{width:72px;height:72px;background:#f4f6f9;border-radius:10px;color:#324b5b;display:grid;place-items:center;font-size:12px}.recImage img{width:100%;height:100%;object-fit:contain}.recAmount{white-space:nowrap;color:#88e4b8}.costRow{display:flex;gap:16px;align-items:center;justify-content:space-between;margin:14px 0}.costTotal{border-top:1px solid #486076;padding-top:15px;font-size:22px;color:#88e4b8}.note{font-size:13px}.alert{color:#ffc68c}@media(max-width:560px){.recProduct{grid-template-columns:55px 1fr}.recImage{width:52px;height:52px}.recAmount{grid-column:2}}.configForm .button{margin-top:4px}@media(max-width:760px){.configGrid{grid-template-columns:1fr}.overview{position:static}.progress span{display:none}.progress>div{justify-content:center}.kind{padding:18px 5px}}
  `}</style>
