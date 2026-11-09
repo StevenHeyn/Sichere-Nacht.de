@@ -29,7 +29,7 @@ export default function Konfigurator(){
  const [water,setWater]=useState(false);
  const [outside,setOutside]=useState(false);
  const [keypad,setKeypad]=useState(true);
- const [sirenOutside,setSirenOutside]=useState(false);
+ const [sirenType,setSirenType]=useState<'innen'|'aussen'>('innen');
  const [mount,setMount]=useState(false);
  const [zip,setZip]=useState('');
  const [color,setColor]=useState<'Weiß'|'Schwarz'>('Weiß');
@@ -45,15 +45,15 @@ export default function Konfigurator(){
     {sku:photo?(black?'38244.40.BL1':'38245.40.WH1'):(black?'38238.40.BL1':'38239.40.WH1'),quantity:1,reason:photo?'Zentrale für Fotoverifizierung':'Ajax-Funkzentrale'},
     {sku:photo?(black?'119281.310.BL1':'119282.310.WH1'):(black?'38194.09.BL1':'38193.09.WH1'),quantity:detectors,reason:'Bewegungserkennung in wichtigen Laufwegen'},
     {sku:black?'38098.03.BL1':'38099.03.WH1',quantity:entryCount,reason:'Öffnungskontakte für ausgewählte Zugänge'},
-    {sku:black?'38110.11.BL1':'38111.11.WH1',quantity:1,reason:'Akustische Alarmierung'},
+    {sku:sirenType==='aussen'?(black?'38179.07.BL1':'38178.07.WH1'):(black?'38110.11.BL1':'38111.11.WH1'),quantity:1,reason:sirenType==='aussen'?'StreetSiren für den Außenbereich; Montageort prüfen':'HomeSiren für den Innenbereich'},
     ...((keypad||protection==='Premium')?[{sku:black?'38248.12.BL1':'38249.12.WH1',quantity:1,reason:'Bedienung per Tastatur'}]:[]),
-    ...((sirenOutside||protection==='Premium')?[{sku:black?'38179.07.BL1':'38178.07.WH1',quantity:1,reason:'Außensirene; Standort prüfen'}]:[]),
+
     ...(fire?[{sku:black?'52251.136.BL1':'52250.136.WH1',quantity:levels,reason:'Zusätzliche Brandwarnung; Rauchwarnmelderpflicht separat prüfen'}]:[]),
     ...(water?[{sku:black?'38254.08.BL1':'38255.08.WH1',quantity:1,reason:'Zusätzlicher Wasserschutz'}]:[]),
     ...(outside?[{sku:'38197.33.WH1',quantity:1,reason:'Außenmelder; Eignung am Objekt prüfen'}]:[])
    ];
    return lines.filter(l=>l.quantity>0).map(l=>({...l,product:bySku.get(l.sku)}));
- },[rooms,levels,photo,entryCount,keypad,sirenOutside,fire,water,outside,color,protection]);
+ },[rooms,levels,photo,entryCount,keypad,sirenType,fire,water,outside,color,protection]);
  const hardwareCents=bundle.reduce((sum,l)=>sum+(l.product?.priceCents??0)*l.quantity,0);
  const allPriced=bundle.every(l=>!!l.product);
  const installationCents=mount?19900:0;
@@ -68,7 +68,7 @@ export default function Konfigurator(){
  <p>Du beschreibst dein Zuhause. Wir stellen eine sinnvolle erste Sicherheitsausstattung zusammen. Ohne Rätselraten bei Hubs und Meldern.</p>
  <div className="progress" aria-label={'Schritt '+(step+1)+' von 4'}>{['Objekt','Zugänge','Schutz & Service','Ergebnis'].map((s,i)=><div key={s} className={i<=step?'active':''}><b>{i+1}</b><span>{s}</span></div>)}</div>
  <div className="grid configGrid"><section className="card configForm">
- {step===0&&<><h2>Was möchtest du schützen?</h2><div className="kindGrid">{(['Wohnung','Haus','Gewerbe'] as Kind[]).map(k=><button key={k} className={'kind '+(kind===k?'selected':'')} onClick={()=>setKind(k)}>{k==='Wohnung'?'▦':k==='Haus'?'⌂':'▤'}<strong>{k}</strong></button>)}</div>{number('Zu sichernde Räume',rooms,setRooms,1)}{number('Etagen',levels,setLevels,1,8)}<h3>Schutzstufe</h3><div className="kindGrid">{(['Basis','Komfort','Premium'] as const).map(level=><button type="button" key={level} className={'kind '+(protection===level?'selected':'')} onClick={()=>setProtection(level)} style={{fontSize:17,padding:'16px 8px'}}><strong>{level}</strong><small>{level==='Basis'?'Wichtige Laufwege':level==='Komfort'?'Mehr Bewegungsmelder':'Alle Räume + Außensirene'}</small></button>)}</div><p className="note">Ein Raum braucht nicht automatisch einen eigenen Bewegungsmelder. Wir berücksichtigen die wichtigen Laufwege.</p></>}
+ {step===0&&<><h2>Was möchtest du schützen?</h2><div className="kindGrid">{(['Wohnung','Haus','Gewerbe'] as Kind[]).map(k=><button key={k} className={'kind '+(kind===k?'selected':'')} onClick={()=>setKind(k)}>{k==='Wohnung'?'▦':k==='Haus'?'⌂':'▤'}<strong>{k}</strong></button>)}</div>{number('Zu sichernde Räume',rooms,setRooms,1)}{number('Etagen',levels,setLevels,1,8)}<h3>Schutzstufe</h3><div className="kindGrid">{(['Basis','Komfort','Premium'] as const).map(level=><button type="button" key={level} className={'kind '+(protection===level?'selected':'')} onClick={()=>{setProtection(level);setSirenType(level==='Premium'?'aussen':'innen')}} style={{fontSize:17,padding:'16px 8px'}}><strong>{level}</strong><small>{level==='Basis'?'Wichtige Laufwege':level==='Komfort'?'Mehr Bewegungsmelder':'Alle Räume + StreetSiren'}</small></button>)}</div><p className="note">Ein Raum braucht nicht automatisch einen eigenen Bewegungsmelder. Wir berücksichtigen die wichtigen Laufwege.</p></>}
  {step===1&&<><h2>Wo gibt es mögliche Zugänge?</h2>{number('Eingangstüren',entrances,setEntrances)}{number('Terrassen- und Balkontüren',terrace,setTerrace)}{number('Erreichbare Fenster',windows,setWindows)}<div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:20}}><span className="card" style={{padding:12}}>🚪 {entrances} Eingang</span><span className="card" style={{padding:12}}>🌿 {terrace} Terrasse</span><span className="card" style={{padding:12}}>🪟 {windows} Fenster</span></div><p className="note">Zähle hier nur Fenster, die du tatsächlich mit Öffnungskontakten sichern möchtest. Glasbruch- und Außenabsicherung sind zusätzliche Optionen.</p></>}
  {step===2&&<><h2>Was ist dir wichtig?</h2>
  {toggle('Fotoverifizierung','Bei Alarm Bilder durch geeignete MotionCam-Melder erhalten',photo,setPhoto)}
@@ -77,7 +77,7 @@ export default function Konfigurator(){
  {toggle('Wasserschutz','Wassermelder etwa für Küche oder Waschküche',water,setWater)}
  {toggle('Außenbereich sichern','Außenmelder nach Prüfung der Gegebenheiten',outside,setOutside)}
  {toggle('Bedienteil','Alarmanlage zusätzlich per Code bedienen',keypad,setKeypad)}
- {toggle('Außensirene','Zusätzliche optische und akustische Abschreckung',sirenOutside,setSirenOutside)}
+ <h3>Welche Sirene möchtest du?</h3><div className="kindGrid" style={{gridTemplateColumns:'repeat(2,minmax(0,1fr))'}}>{([['innen','HomeSiren (innen)'],['aussen','StreetSiren (außen)']] as const).map(([value,label])=><button key={value} type="button" aria-pressed={sirenType===value} className={'kind '+(sirenType===value?'selected':'')} onClick={()=>setSirenType(value)} style={{fontSize:16,padding:'14px 8px'}}><strong>{label}</strong></button>)}</div><p className="note">Es wird genau eine Sirene berücksichtigt. Die StreetSiren ersetzt die HomeSiren und wird nicht zusätzlich berechnet.</p>
  <h3>Gerätefarbe</h3><div className="row">{(['Weiß','Schwarz'] as const).map(c=><button key={c} className={'button '+(color===c?'':'secondary')} onClick={()=>setColor(c)}>{c}</button>)}</div>
  <h3>Installation</h3>{toggle('Professionelle Montage (+199 € brutto)','Optional, zunächst nur in Hamburg und Umgebung',mount,setMount)}
  {mount&&<><label htmlFor="zip">Postleitzahl des Montageorts</label><input id="zip" inputMode="numeric" placeholder="z. B. 20095" maxLength={5} value={zip} onChange={e=>setZip(e.target.value.replace(/\D/g,''))}/><p className="note">Die Verfügbarkeit für deine PLZ bestätigen wir vor einer verbindlichen Buchung. Eine automatische PLZ-Freigabe ist noch nicht aktiv.</p></>}
