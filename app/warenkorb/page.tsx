@@ -8,12 +8,19 @@ const products=new Map((productsData as Product[]).map(p=>[p.sku,p]));
 const money=(c:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(c/100);
 export default function CartPage(){
  const [cart,setCart]=useState<CartDraft|null>(null);
+ const [checkoutBusy,setCheckoutBusy]=useState(false);
+ const [checkoutError,setCheckoutError]=useState('');
  useEffect(()=>{setCart(loadCart())},[]);
  const lines=useMemo(()=>cart?.items.map(line=>({...line,product:products.get(line.sku)}))||[],[cart]);
  const invalid=lines.filter(l=>!l.product);
  const subtotal=lines.reduce((sum,l)=>sum+(l.product?.priceCents||0)*l.quantity,0);
  const montage=cart?.installation?19900:0;
  const total=subtotal+montage;
+ async function startCheckout(){
+  if(!cart||checkoutBusy)return;
+  setCheckoutBusy(true);setCheckoutError('');
+  try{const response=await fetch('/api/checkout',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({items:cart.items,installation:cart.installation,vpId:cart.vpId})});const payload=await response.json();if(!response.ok)throw new Error(payload.error||'Checkout derzeit nicht verfügbar');if(typeof payload.url!=='string'||!payload.url.startsWith('https://checkout.stripe.com/'))throw new Error('Ungültige Zahlungsadresse');window.location.assign(payload.url);}catch(e){setCheckoutError(e instanceof Error?e.message:'Checkout derzeit nicht möglich');setCheckoutBusy(false);}
+ }
  function update(items:CartDraft['items']){if(!cart)return;setCart(saveCart({items,installation:cart.installation,installationZip:cart.installationZip,source:cart.source}));}
  function setInstallation(installation:boolean){if(!cart)return;setCart(saveCart({items:cart.items,installation,installationZip:cart.installationZip,source:cart.source}));}
  function setZip(zip:string){if(!cart)return;setCart(saveCart({items:cart.items,installation:cart.installation,installationZip:zip.replace(/\D/g,'').slice(0,5),source:cart.source}));}
@@ -28,6 +35,6 @@ export default function CartPage(){
 
  <hr/><div style={{display:'flex',justifyContent:'space-between',gap:12}}><span>Gesamt inkl. MwSt.</span><strong className="price">{money(total)}</strong></div><p>Darin enthaltene MwSt.: {money(Math.round(total*19/119))}</p><p className="note">Zzgl. eventueller Versandkosten; Höhe wird vor dem verbindlichen Kauf ausgewiesen.</p>
  {invalid.length>0&&<p style={{color:'#ffb38a'}}>Einige Artikel sind nicht mehr im aktuellen Katalog. Bitte prüfe die Auswahl.</p>}
- <button className="button secondary" disabled style={{width:'100%',cursor:'not-allowed'}}>Bezahlung folgt</button><p className="note">Stripe wird erst nach Einrichtung der Zahlungsdaten, Versandberechnung und Montageprüfung freigeschaltet.</p><Link href="/konfigurator">Konfiguration anpassen</Link></aside></div>}
+ <button type="button" className="button" onClick={startCheckout} disabled={process.env.NEXT_PUBLIC_CHECKOUT_ENABLED!=='true'||checkoutBusy||invalid.length>0||cart.installation} style={{width:'100%',cursor:process.env.NEXT_PUBLIC_CHECKOUT_ENABLED==='true'?'pointer':'not-allowed'}}>{checkoutBusy?'Weiterleitung …':process.env.NEXT_PUBLIC_CHECKOUT_ENABLED==='true'?'Sicher mit Stripe bezahlen':'Onlinezahlung noch nicht freigeschaltet'}</button>{checkoutError&&<p role="alert" style={{color:'#ffb38a'}}>{checkoutError}</p>}<p className="note">Stripe wird erst nach Einrichtung der Zahlungsdaten, Versandkosten und rechtlicher Prüfung freigeschaltet. Montagebuchungen benötigen eine separate Bestätigung.</p><Link href="/konfigurator">Konfiguration anpassen</Link></aside></div>}
  </main>;
 }
