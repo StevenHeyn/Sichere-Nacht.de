@@ -2,7 +2,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import productsData from '../../products.json';
-import {CartDraft,loadCart,saveCart,normalizeVpId} from '../../lib/cart';
+import {CartDraft,loadCart,saveCart} from '../../lib/cart';
 type Product={sku:string;name:string;priceCents:number;image:string|null};
 const products=new Map((productsData as Product[]).map(p=>[p.sku,p]));
 const money=(c:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(c/100);
@@ -16,7 +16,6 @@ export default function CartPage(){
  const total=subtotal+montage;
  function update(items:CartDraft['items']){if(!cart)return;setCart(saveCart({items,installation:cart.installation,installationZip:cart.installationZip,source:cart.source}));}
  function setInstallation(installation:boolean){if(!cart)return;setCart(saveCart({items:cart.items,installation,installationZip:cart.installationZip,source:cart.source}));}
- function setVpId(vpId:string){if(!cart)return;setCart(saveCart({items:cart.items,installation:cart.installation,installationZip:cart.installationZip,source:cart.source,vpId:normalizeVpId(vpId)}));}
  function setZip(zip:string){if(!cart)return;setCart(saveCart({items:cart.items,installation:cart.installation,installationZip:zip.replace(/\D/g,'').slice(0,5),source:cart.source}));}
  return <main className="wrap" style={{paddingBottom:80}}><nav className="nav"><Link href="/" className="brand">◈ SICHERE <span className="accent">NACHT</span></Link><Link href="/shop">Zum Shop</Link></nav><p className="accent">DEINE ZUSAMMENSTELLUNG</p><h1>Warenkorb</h1><p>Alle Preise inklusive 19 % Mehrwertsteuer. Noch kein verbindlicher Kauf: Die Zahlungsfunktion folgt nach der technischen und rechtlichen Freigabe.</p>
  {!cart?<p>Warenkorb wird geladen …</p>:lines.length===0?<div className="card"><h2>Dein Warenkorb ist leer.</h2><p>Stelle deine Alarmanlage im Konfigurator zusammen oder wähle einzelne Artikel aus.</p><div className="row"><Link className="button" href="/konfigurator">Zum Konfigurator</Link><Link className="button secondary" href="/shop">Ajax-Produkte ansehen</Link></div></div>:<div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',alignItems:'start'}}>
@@ -26,7 +25,7 @@ export default function CartPage(){
  <aside className="card"><h2>Preisübersicht</h2><div style={{display:'flex',justifyContent:'space-between',gap:12}}><span>Ajax-Komponenten</span><strong>{money(subtotal)}</strong></div>
  <label style={{marginTop:22}}><input type="checkbox" checked={cart.installation} onChange={e=>setInstallation(e.target.checked)}/> Optionale Montage (+199,00 € brutto)</label>
  {cart.installation&&<><label htmlFor="plz">Montage-PLZ (Hamburg und Umgebung)</label><input id="plz" inputMode="numeric" value={cart.installationZip} maxLength={5} placeholder="z. B. 20095" onChange={e=>setZip(e.target.value)}/><p className="note">Die Montage ist nur nach Prüfung von Standort und Leistungsumfang buchbar. Ein PLZ-Check wird noch ergänzt.</p></>}
- <div style={{border:'1px solid #38536d',padding:16,borderRadius:12,marginTop:20,background:'#10253a'}}><label htmlFor="vp-id" style={{fontWeight:700}}>Vertriebspartner-ID (optional)</label><input id="vp-id" name="vpId" autoComplete="off" value={cart.vpId} maxLength={32} placeholder="VP-ID eingeben" onChange={e=>setVpId(e.target.value)} style={{marginTop:8}}/><p className="note" style={{marginBottom:0}}>Wenn dich ein Vertriebspartner beraten hat, trage hier seine VP-ID ein. Die ID wird für eine spätere Zuordnung der Bestellung gespeichert und verändert deinen Preis nicht.</p>{cart.vpId&&<p className="accent" role="status" style={{marginBottom:0}}>VP-ID vorgemerkt: {cart.vpId}</p>}</div>
+
  <hr/><div style={{display:'flex',justifyContent:'space-between',gap:12}}><span>Gesamt inkl. MwSt.</span><strong className="price">{money(total)}</strong></div><p>Darin enthaltene MwSt.: {money(Math.round(total*19/119))}</p><p className="note">Zzgl. eventueller Versandkosten; Höhe wird vor dem verbindlichen Kauf ausgewiesen.</p>
  {invalid.length>0&&<p style={{color:'#ffb38a'}}>Einige Artikel sind nicht mehr im aktuellen Katalog. Bitte prüfe die Auswahl.</p>}
  <button className="button secondary" disabled style={{width:'100%',cursor:'not-allowed'}}>Bezahlung folgt</button><p className="note">Stripe wird erst nach Einrichtung der Zahlungsdaten, Versandberechnung und Montageprüfung freigeschaltet.</p><Link href="/konfigurator">Konfiguration anpassen</Link></aside></div>}
