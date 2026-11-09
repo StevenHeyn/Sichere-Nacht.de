@@ -1,5 +1,5 @@
 'use client';
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {saveCart} from '../../lib/cart';
@@ -35,6 +35,17 @@ export default function Konfigurator(){
  const [color,setColor]=useState<'Weiß'|'Schwarz'>('Weiß');
  const [email,setEmail]=useState('');
  const [sent,setSent]=useState(false);
+ useEffect(()=>{
+  const params=new URLSearchParams(window.location.search);
+  const obj=params.get('objekt');
+  if(obj==='wohnung')setKind('Wohnung');
+  else if(obj==='haus')setKind('Haus');
+  else if(obj==='gewerbe')setKind('Gewerbe');
+  const preset=params.get('paket');
+  if(preset==='safe'){setKind('Wohnung');setRooms(2);setLevels(1);setEntrances(1);setTerrace(0);setWindows(0);setProtection('Basis');setKeypad(false);setPhoto(true);}
+  if(preset==='safer'){setKind('Haus');setRooms(3);setLevels(1);setEntrances(1);setTerrace(1);setWindows(1);setProtection('Komfort');setKeypad(true);setPhoto(true);}
+  if(preset==='safer-plus'){setKind('Haus');setRooms(4);setLevels(1);setEntrances(1);setTerrace(2);setWindows(3);setProtection('Premium');setKeypad(true);setPhoto(true);}
+ },[]);
  const entryCount=entrances+terrace+windows;
  const bundle=useMemo(()=>{
    // Conservative baseline wireless recommendation. Final planning must verify radio range,
