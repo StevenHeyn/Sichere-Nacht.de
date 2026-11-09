@@ -25,9 +25,11 @@ export default function Shop(){
  <div><label htmlFor="s">Sortierung</label><select id="s" value={sort} onChange={e=>setSort(e.target.value)}><option value="relevant">Empfohlen</option><option value="low">Preis aufsteigend</option><option value="high">Preis absteigend</option></select></div>
  </section><p>{shown.length} Produkte gefunden</p><section className="grid" style={{margin:'20px 0 80px'}}>
  {shown.map(p=><article className="card" key={p.sku} style={{display:'flex',flexDirection:'column',gap:6}}>
- <div style={{background:'#0A1829',borderRadius:12,height:150,display:'grid',placeItems:'center',color:'#87b7a7',border:'1px dashed #30465a',textAlign:'center',padding:18}}><span>AJAX<br/><small>Produktbild folgt</small></span></div>
- <p className="accent" style={{marginBottom:0,fontSize:12}}>{p.category} · {p.line}</p><h3 style={{margin:'4px 0'}}>{p.name}</h3><p style={{margin:0,fontSize:14}}>{p.shortDescription}</p><p style={{fontSize:12,margin:'auto 0 0'}}>Art.-Nr. {p.sku}</p><div className="price">{euro(p.priceCents)}</div><p style={{fontSize:12,margin:0}}>inkl. 19 % MwSt., zzgl. Versand</p><button type="button" className="button secondary" disabled aria-label={p.name+' bestellen – noch nicht verfügbar'}>Bald bestellbar</button>
+ <div style={{background:'#F5F7FA',borderRadius:12,height:190,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',padding:12}}>
+ {p.image ? <img src={p.image} alt={p.name} loading="lazy" decoding="async" width={240} height={170} style={{width:'100%',height:'100%',objectFit:'contain'}}/> : <span style={{color:'#52677B',textAlign:'center'}}>AJAX<br/><small>Kein Produktbild verfügbar</small></span>}
+ </div>
+ <p className="accent" style={{marginBottom:0,fontSize:12}}>{p.category} · {p.line}</p><h3 style={{margin:'4px 0'}}>{p.name}</h3><p style={{margin:0,fontSize:14,display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{p.shortDescription}</p><p style={{fontSize:12,margin:'auto 0 0'}}>Art.-Nr. {p.sku}</p><div className="price">{euro(p.priceCents)}</div><p style={{fontSize:12,margin:0}}>inkl. 19 % MwSt., zzgl. Versand</p><button type="button" className="button secondary" disabled aria-label={p.name+' bestellen – noch nicht verfügbar'}>Bald bestellbar</button>
  </article>)}</section>{shown.length===0&&<p>Keine passenden Produkte gefunden. Versuche einen anderen Suchbegriff.</p>}
- <footer className="footer">H&K Projekt UG (haftungsbeschränkt) · Lehmkoppel 7 · 25499 Tangstedt<br/><small>Vorschau ohne aktive Bestellfunktion. Produktbilder werden noch ergänzt.</small></footer>
+ <footer className="footer">H&K Projekt UG (haftungsbeschränkt) · Lehmkoppel 7 · 25499 Tangstedt<br/><small>Vorschau ohne aktive Bestellfunktion.</small></footer>
  </main>;
 }
