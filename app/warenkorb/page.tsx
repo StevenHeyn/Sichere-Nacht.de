@@ -26,7 +26,7 @@ function EmbeddedCheckout({secret,onError}:{secret:string;onError:(error:string)
     if(result.type!=='success'||!result.actions){onError(result.error?.message||'Die Zahlungsmaske konnte nicht geladen werden.');return;}
     form?.on('confirm',async event=>{
      try{
-      const resultConfirm=await result.actions!.confirm({formConfirmEvent:event,returnUrl:window.location.origin+'/bestellung'});
+      const resultConfirm=await result.actions!.confirm({formConfirmEvent:event});
       if(resultConfirm.type==='error'&&active)onError(resultConfirm.error?.message||'Stripe konnte die Zahlung nicht bestätigen.');
      }catch(err){
       if(!active)return;
