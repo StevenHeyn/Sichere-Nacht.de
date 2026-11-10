@@ -16,8 +16,8 @@ export default function RoomPlanner({rooms,onChange,floors}:Props){
  const [activeId,setActiveId]=useState(rooms[0]?.id??1);
  const [floor,setFloor]=useState(0);
  const [newType,setNewType]=useState<RoomType>('Schlafzimmer');
- const selected=rooms.find(r=>r.id===activeId)||rooms[0];
  const floorRooms=rooms.filter(r=>r.floor===floor);
+ const selected=floorRooms.find(r=>r.id===activeId)||floorRooms[0];
  const sum=(key:'entrances'|'terraces'|'windows')=>rooms.reduce((s,r)=>s+r[key],0);
  function changeRoom(id:number,change:Partial<PlannedRoom>){onChange(rooms.map(r=>r.id===id?{...r,...change}:r))}
  function addRoom(){
