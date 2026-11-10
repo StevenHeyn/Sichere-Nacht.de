@@ -1,7 +1,7 @@
 'use client';
 import {useState} from 'react';
 import Link from 'next/link';
-type Order={stripe_session_id:string;status:string;amount_total:number;currency:string;customer_email:string|null;customer_name:string|null;shipping_country:string|null;vp_id:string|null;test_mode:boolean;items:Array<{name:string;sku:string|null;quantity:number}>;created_at:string};
+type Order={stripe_session_id:string;status:string;amount_total:number;currency:string;customer_email:string|null;customer_name:string|null;shipping_country:string|null;shipping_address:Record<string,string|null>|null;vp_id:string|null;test_mode:boolean;items:Array<{name:string;sku:string|null;quantity:number}>;created_at:string};
 export default function Bestellungen(){
  const [token,setToken]=useState('');
  const [orders,setOrders]=useState<Order[]>([]);
@@ -36,7 +36,7 @@ export default function Bestellungen(){
      <strong className="accent">{money(o.amount_total,o.currency)}</strong>
     </div>
     <p style={{margin:'4px 0'}}>{new Date(o.created_at).toLocaleString('de-DE')} · {o.test_mode?'TEST':'LIVE'} · {o.status} · {o.shipping_country||'Lieferland unbekannt'}</p>
-    <p>{o.customer_email||'Keine E-Mail'}{o.vp_id?' · Partner '+o.vp_id:''}</p>
+    <p>{o.customer_email||'Keine E-Mail'}{o.vp_id?' · Partner '+o.vp_id:''}</p>\n    {o.shipping_address&&<p><strong>Lieferadresse:</strong> {[o.shipping_address.line1,o.shipping_address.line2,o.shipping_address.postal_code,o.shipping_address.city,o.shipping_address.country].filter(Boolean).join(', ')}</p>}
     <p>{o.items?.map(i=>i.quantity+'× '+i.name).join(' · ')}</p>
     <small>Stripe-Sitzung: {o.stripe_session_id}</small>
    </article>)}
