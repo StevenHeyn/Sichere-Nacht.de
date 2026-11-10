@@ -8,7 +8,6 @@ const intIn=(v:unknown,min:number,max:number)=>typeof v==='number'&&Number.isInt
 export async function POST(request:Request){
  const enabled=process.env.CHECKOUT_ENABLED==='true'&&process.env.PAYMENTS_LIVE_APPROVED==='true';
  const secret=process.env.STRIPE_SECRET_KEY;
- const shipping=990; // Deutschland-Pauschale brutto in Cent
  const base=process.env.NEXT_PUBLIC_SITE_URL;
  if(!enabled||!secret||!base||!process.env.STRIPE_WEBHOOK_SECRET){
   return error('Der Bezahlvorgang ist noch nicht freigeschaltet. Bitte später erneut versuchen.',503);
@@ -17,6 +16,9 @@ export async function POST(request:Request){
  try{origin=new URL(base).origin;if(!origin.startsWith('https://'))throw Error('non-https')}catch{return error('Shop-Adresse noch nicht freigegeben.',503)}
  const body=await request.json().catch(()=>null);
  if(!body||!Array.isArray(body.items)||body.items.length<1||body.items.length>50)return error('Ungültiger Warenkorb.',400);
+ const country=body.shippingCountry;
+ if(country!=='DE'&&country!=='AT')return error('Bitte ein gültiges Lieferland wählen.',400);
+ const shipping=country==='AT'?1990:990;
  if(body.installation===true)return error('Montagebuchungen sind derzeit nur nach individueller Standortprüfung möglich. Bitte die Montageoption entfernen.',409);
  const cart=new Map<string,number>();
  for(const item of body.items as OrderLine[]){
@@ -29,8 +31,7 @@ export async function POST(request:Request){
  form.set('ui_mode','form');
  form.set('billing_address_collection','required');
  form.set('phone_number_collection[enabled]','false');
- form.set('shipping_address_collection[allowed_countries][0]','AT');
- form.set('shipping_address_collection[allowed_countries][1]','DE');
+ form.set('shipping_address_collection[allowed_countries][0]',country);
  form.set('locale','de');
  form.set('automatic_tax[enabled]','true');
  form.set('submit_type','auto');
@@ -52,11 +53,12 @@ export async function POST(request:Request){
  form.set('shipping_options[0][shipping_rate_data][fixed_amount][amount]',String(shipping));
  form.set('shipping_options[0][shipping_rate_data][fixed_amount][currency]','eur');
  form.set('shipping_options[0][shipping_rate_data][tax_behavior]','inclusive');
- form.set('shipping_options[0][shipping_rate_data][display_name]',shipping?'Standardversand Deutschland':'Kostenloser Versand Deutschland');
+ form.set('shipping_options[0][shipping_rate_data][display_name]',country==='AT'?'Standardversand Österreich':'Standardversand Deutschland');
  const vp=typeof body.vpId==='string'?body.vpId.trim().toUpperCase():'';
  const registered=(process.env.VALID_PARTNER_IDS||'').split(',').map(x=>x.trim().toUpperCase()).filter(Boolean);
  if(/^VP-[A-Z0-9]{3,16}$/.test(vp)&&registered.includes(vp))form.set('metadata[vp_id]',vp);
  form.set('metadata[shop]','sichere-nacht');
+ form.set('metadata[shipping_country]',country);
  form.set('metadata[attribution_status]',form.has('metadata[vp_id]')?'registered':'none');
  try{
   const response=await fetch('https://api.stripe.com/v1/checkout/sessions',{method:'POST',headers:{Authorization:'Bearer '+secret,'content-type':'application/x-www-form-urlencoded','Stripe-Version':'2026-03-25.dahlia'},body:form.toString(),cache:'no-store'});
