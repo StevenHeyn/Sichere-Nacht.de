@@ -9,13 +9,11 @@ export async function POST(request:Request){
  const enabled=process.env.CHECKOUT_ENABLED==='true'&&process.env.PAYMENTS_LIVE_APPROVED==='true';
  const secret=process.env.STRIPE_SECRET_KEY;
  const rate=process.env.STRIPE_TAX_RATE_ID;
- const rawShipping=process.env.SHIPPING_GROSS_CENTS;
+ const shipping=990; // Deutschland-Pauschale brutto in Cent
  const base=process.env.NEXT_PUBLIC_SITE_URL;
- if(!enabled||!secret||!rate||rawShipping===undefined||!base||!process.env.STRIPE_WEBHOOK_SECRET){
+ if(!enabled||!secret||!rate||!base||!process.env.STRIPE_WEBHOOK_SECRET){
   return error('Der Bezahlvorgang ist noch nicht freigeschaltet. Bitte später erneut versuchen.',503);
  }
- const shipping=Number(rawShipping);
- if(!Number.isInteger(shipping)||shipping<0||shipping>50000)return error('Versandkonfiguration noch unvollständig.',503);
  let origin:string;
  try{origin=new URL(base).origin;if(!origin.startsWith('https://'))throw Error('non-https')}catch{return error('Shop-Adresse noch nicht freigegeben.',503)}
  const body=await request.json().catch(()=>null);
