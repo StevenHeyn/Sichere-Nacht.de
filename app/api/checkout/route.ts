@@ -8,10 +8,9 @@ const intIn=(v:unknown,min:number,max:number)=>typeof v==='number'&&Number.isInt
 export async function POST(request:Request){
  const enabled=process.env.CHECKOUT_ENABLED==='true'&&process.env.PAYMENTS_LIVE_APPROVED==='true';
  const secret=process.env.STRIPE_SECRET_KEY;
- const rate=process.env.STRIPE_TAX_RATE_ID;
  const shipping=990; // Deutschland-Pauschale brutto in Cent
  const base=process.env.NEXT_PUBLIC_SITE_URL;
- if(!enabled||!secret||!rate||!base||!process.env.STRIPE_WEBHOOK_SECRET){
+ if(!enabled||!secret||!base||!process.env.STRIPE_WEBHOOK_SECRET){
   return error('Der Bezahlvorgang ist noch nicht freigeschaltet. Bitte später erneut versuchen.',503);
  }
  let origin:string;
@@ -27,13 +26,15 @@ export async function POST(request:Request){
  }
  const form=new URLSearchParams();
  form.set('mode','payment');
- form.set('success_url',origin+'/bestellung?session_id={CHECKOUT_SESSION_ID}');
- form.set('cancel_url',origin+'/warenkorb');
+ form.set('ui_mode','form');
  form.set('billing_address_collection','required');
- form.set('phone_number_collection[enabled]','true');
- form.set('shipping_address_collection[allowed_countries][0]','DE');
+ form.set('phone_number_collection[enabled]','false');
+ form.set('shipping_address_collection[allowed_countries][0]','AT');
+ form.set('shipping_address_collection[allowed_countries][1]','DE');
  form.set('locale','de');
- form.set('payment_method_types[0]','card');
+ form.set('automatic_tax[enabled]','true');
+ form.set('submit_type','auto');
+ form.set('integration_identifier','custom_embedded_web_0001');
  let i=0;
  for(const [sku,quantity] of cart){
   const p=priceBySku.get(sku)!;
@@ -41,15 +42,16 @@ export async function POST(request:Request){
   const prefix='line_items['+i+']';
   form.set(prefix+'[price_data][currency]','eur');
   form.set(prefix+'[price_data][unit_amount]',String(p.priceCents));
+  form.set(prefix+'[price_data][tax_behavior]','inclusive');
   form.set(prefix+'[price_data][product_data][name]',p.name.slice(0,240));
   form.set(prefix+'[price_data][product_data][metadata][sku]',sku);
-  form.set(prefix+'[tax_rates][0]',rate);
   form.set(prefix+'[quantity]',String(quantity));
   i++;
  }
  form.set('shipping_options[0][shipping_rate_data][type]','fixed_amount');
  form.set('shipping_options[0][shipping_rate_data][fixed_amount][amount]',String(shipping));
  form.set('shipping_options[0][shipping_rate_data][fixed_amount][currency]','eur');
+ form.set('shipping_options[0][shipping_rate_data][tax_behavior]','inclusive');
  form.set('shipping_options[0][shipping_rate_data][display_name]',shipping?'Standardversand Deutschland':'Kostenloser Versand Deutschland');
  const vp=typeof body.vpId==='string'?body.vpId.trim().toUpperCase():'';
  const registered=(process.env.VALID_PARTNER_IDS||'').split(',').map(x=>x.trim().toUpperCase()).filter(Boolean);
@@ -57,9 +59,9 @@ export async function POST(request:Request){
  form.set('metadata[shop]','sichere-nacht');
  form.set('metadata[attribution_status]',form.has('metadata[vp_id]')?'registered':'none');
  try{
-  const response=await fetch('https://api.stripe.com/v1/checkout/sessions',{method:'POST',headers:{Authorization:'Bearer '+secret,'content-type':'application/x-www-form-urlencoded'},body:form.toString(),cache:'no-store'});
+  const response=await fetch('https://api.stripe.com/v1/checkout/sessions',{method:'POST',headers:{Authorization:'Bearer '+secret,'content-type':'application/x-www-form-urlencoded','Stripe-Version':'2026-03-25.dahlia'},body:form.toString(),cache:'no-store'});
   const data=await response.json();
-  if(!response.ok||typeof data.url!=='string'||!data.url.startsWith('https://checkout.stripe.com/'))return error('Der Zahlungsdienst ist momentan nicht verfügbar.',502);
-  return NextResponse.json({url:data.url});
+  if(!response.ok||typeof data.client_secret!=='string')return error('Der Zahlungsdienst ist momentan nicht verfügbar.',502);
+  return NextResponse.json({client_secret:data.client_secret});
  }catch{return error('Zahlung konnte nicht vorbereitet werden.',502)}
 }
