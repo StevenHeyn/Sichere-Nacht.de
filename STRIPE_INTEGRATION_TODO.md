@@ -33,13 +33,13 @@ Der serverseitige API-Aufruf ist in [app/api/checkout/route.ts](app/api/checkout
 | `phone_number_collection.enabled` | `false` |
 | `automatic_tax.enabled` | `true` |
 | `submit_type` | `auto` |
-| `shipping_address_collection.allowed_countries` | `AT`, `DE` (Stripe-Studio-Konfiguration) |
+| `shipping_address_collection.allowed_countries` | `DE` oder `AT`, anhand der vom Kunden gewählten Lieferregion sicher eingeschränkt |
 | `integration_identifier` | `custom_embedded_web_0001` |
 | `payment_method_collection` | Im `payment`-Modus absichtlich weggelassen (laut Stripe-Studio-Auftrag nur bei `subscription`) |
 | `line_items` | Reale SKU, Artikelbezeichnung, Menge und serverseitig kontrollierter Bruttopreis |
 | `line_items.price_data.tax_behavior` | `inclusive` (keine zusätzlich auf den Bruttopreis aufzuschlagende Umsatzsteuer) |
 | `shipping_options.shipping_rate_data.tax_behavior` | `inclusive` |
-| `shipping_options.shipping_rate_data.fixed_amount.amount` | `990` Cent, brutto |
+| `shipping_options.shipping_rate_data.fixed_amount.amount` | `990` Cent für DE, `1990` Cent für AT, brutto |
 | `Stripe-Version` | `2026-03-25.dahlia` |
 
 ## Setup and next steps (Pflicht vor echter Zahlungsfreigabe)
@@ -49,7 +49,7 @@ Der serverseitige API-Aufruf ist in [app/api/checkout/route.ts](app/api/checkout
 3. **Webhook & Order-Persistenz fehlen:** Der Stripe-signierte Webhook (mindestens `checkout.session.completed`, bei asynchronen Methoden zusätzlich relevante Zahlungsstatus-Ereignisse) sowie eine idempotente Bestellspeicherung sind noch nicht implementiert. Ein abgeschlossener Bildschirm ersetzt keine bestätigte und gespeicherte Bestellung. Ohne dies die Checkout-Freigabe **nicht** aktivieren.
 4. **Bestellkommunikation:** Automatische Bestellbestätigung, Versand-/Fulfillment-Ablauf, Erstattung und Belegprozess vervollständigen. Die Seite [app/bestellung/page.tsx](app/bestellung/page.tsx) prüft die Zahlung bisher nicht serverseitig.
 5. **Steuern:** In Stripe Tax Standort, deutsche Steuerregistrierung und korrekte Steuercodes prüfen. Preise sind im Katalog bereits inklusive 19 % deutscher Umsatzsteuer; durch `inclusive` darf die angezeigte Bruttosumme nicht doppelt besteuert werden. Bei österreichischen Lieferadressen muss die korrekte Steuerbehandlung separat fachlich geprüft werden. **Automatische Steuerberechnung allein ist noch keine steuerliche Freigabe.**
-6. **Versand:** Bisher ausdrücklich festgelegt sind **9,90 € brutto innerhalb Deutschlands**. Die Stripe-Studio-Vorlage erlaubt zusätzlich AT; dafür fehlen abgestimmte Versandkosten, Lieferbedingungen und steuerliche Prüfung. Vor Livegang entscheiden: Österreich aktiv anbieten und Bedingungen veröffentlichen oder AT aus Checkout entfernen. Die aktuelle Checkout-Vorlage nicht ungeprüft freischalten.
+6. **Versand:** Bisher ausdrücklich festgelegt sind **9,90 € brutto innerhalb Deutschlands**. Österreich wurde am 10.11.2026 mit **19,90 € brutto je Bestellung** festgelegt (Deutschland: **9,90 € brutto**). Der Warenkorb verlangt eine Länderauswahl; der Server lässt in der Checkout-Session ausschließlich das gewählte Lieferland zu und berechnet den jeweiligen Preis. Steuerliche Behandlung/Lieferzeiten müssen dennoch vor Livegang geprüft werden. Die aktuelle Checkout-Vorlage nicht ungeprüft freischalten.
 7. **Montage:** Optionale 199-€-Montage kann derzeit nicht direkt bezahlt werden; die API lehnt sie mit Hinweis auf individuelle Standortprüfung ab. Diese Sperre beibehalten, bis die Leistung technisch und vertraglich geklärt ist.
 8. **Rechtstexte:** Impressum und Kontaktdaten gegen aktuelle Firmendaten verifizieren, Datenschutz, Widerruf, Lieferzeiten, Verbraucherinformationen und Bestellschaltfläche prüfen.
 9. **Vertriebspartner:** Weiterhin keine automatische Agenturprovision. Später: Agentur erhält **20 % des Nettowarenumsatzes**, zahlt daraus **15 % an VP**; Sichere Nacht zahlt nur an Agentur. Dafür belastbare Zuordnung, Rückbelastungen bei Retouren und Abrechnungsdatenbank bauen.
