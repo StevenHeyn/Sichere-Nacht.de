@@ -15,7 +15,8 @@ export default function CartPage(){
  const invalid=lines.filter(l=>!l.product);
  const subtotal=lines.reduce((sum,l)=>sum+(l.product?.priceCents||0)*l.quantity,0);
  const montage=cart?.installation?19900:0;
- const total=subtotal+montage;
+ const shipping=lines.length>0?990:0;
+ const total=subtotal+montage+shipping;
  async function startCheckout(){
   if(!cart||checkoutBusy)return;
   setCheckoutBusy(true);setCheckoutError('');
@@ -33,7 +34,7 @@ export default function CartPage(){
  <label style={{marginTop:22}}><input type="checkbox" checked={cart.installation} onChange={e=>setInstallation(e.target.checked)}/> Optionale Montage (+199,00 € brutto)</label>
  {cart.installation&&<><label htmlFor="plz">Montage-PLZ (Hamburg und Umgebung)</label><input id="plz" inputMode="numeric" value={cart.installationZip} maxLength={5} placeholder="z. B. 20095" onChange={e=>setZip(e.target.value)}/><p className="note">Die Montage ist nur nach Prüfung von Standort und Leistungsumfang buchbar. Ein PLZ-Check wird noch ergänzt.</p></>}
 
- <hr/><div style={{display:'flex',justifyContent:'space-between',gap:12}}><span>Gesamt inkl. MwSt.</span><strong className="price">{money(total)}</strong></div><p>Darin enthaltene MwSt.: {money(Math.round(total*19/119))}</p><p className="note">Zzgl. eventueller Versandkosten; Höhe wird vor dem verbindlichen Kauf ausgewiesen.</p>
+ <div style={{display:'flex',justifyContent:'space-between',gap:12,marginTop:16}}><span>Versand Deutschland (inkl. MwSt.)</span><strong>{money(shipping)}</strong></div><hr/><div style={{display:'flex',justifyContent:'space-between',gap:12}}> <span>Gesamt inkl. MwSt.</span><strong className="price">{money(total)}</strong></div><p>Darin enthaltene MwSt.: {money(Math.round(total*19/119))}</p><p className="note">Inklusive 9,90 € Versandpauschale für Lieferungen innerhalb Deutschlands.</p>
  {invalid.length>0&&<p style={{color:'#ffb38a'}}>Einige Artikel sind nicht mehr im aktuellen Katalog. Bitte prüfe die Auswahl.</p>}
  <button type="button" className="button" onClick={startCheckout} disabled={process.env.NEXT_PUBLIC_CHECKOUT_ENABLED!=='true'||checkoutBusy||invalid.length>0||cart.installation} style={{width:'100%',cursor:process.env.NEXT_PUBLIC_CHECKOUT_ENABLED==='true'?'pointer':'not-allowed'}}>{checkoutBusy?'Weiterleitung …':process.env.NEXT_PUBLIC_CHECKOUT_ENABLED==='true'?'Sicher mit Stripe bezahlen':'Onlinezahlung noch nicht freigeschaltet'}</button>{checkoutError&&<p role="alert" style={{color:'#ffb38a'}}>{checkoutError}</p>}<p className="note">Stripe wird erst nach Einrichtung der Zahlungsdaten, Versandkosten und rechtlicher Prüfung freigeschaltet. Montagebuchungen benötigen eine separate Bestätigung.</p><Link href="/konfigurator">Konfiguration anpassen</Link></aside></div>}
  </main>;
