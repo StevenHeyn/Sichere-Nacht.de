@@ -34,6 +34,7 @@ export async function POST(request:Request){
  const form=new URLSearchParams();
  form.set('mode','payment');
  form.set('ui_mode','form');
+ form.set('return_url',origin+'/bestellung?session_id={CHECKOUT_SESSION_ID}');
  form.set('billing_address_collection','required');
  form.set('phone_number_collection[enabled]','false');
  form.set('shipping_address_collection[allowed_countries][0]',country);
