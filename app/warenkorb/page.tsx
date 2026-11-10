@@ -8,7 +8,7 @@ const products=new Map((productsData as Product[]).map(p=>[p.sku,p]));
 const money=(c:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(c/100);
 type CheckoutFormInstance={mount:(selector:string)=>void;on:(event:'confirm',handler:(event:unknown)=>void)=>void;unmount?:()=>void;destroy?:()=>void};
 type StripeConfirmResult={type:'success';session?:unknown}|{type:'error';error?:{message?:string;code?:string}};
-type CheckoutFormSDK={createForm:(options:{layout:'expanded'})=>CheckoutFormInstance;loadActions:()=>Promise<{type:string;error?:{message?:string};actions?:{confirm:(options:{formConfirmEvent:unknown;returnUrl:string})=>Promise<StripeConfirmResult>}} >};
+type CheckoutFormSDK={createForm:(options:{layout:'expanded'})=>CheckoutFormInstance;loadActions:()=>Promise<{type:string;error?:{message?:string};actions?:{confirm:(options:{formConfirmEvent:unknown})=>Promise<StripeConfirmResult>}} >};
 type StripeJsInstance={initCheckoutFormSdk:(options:{clientSecret:string;appearance:Record<string,unknown>})=>CheckoutFormSDK};
 declare global { interface Window {Stripe?: (key:string)=>StripeJsInstance} }
 function EmbeddedCheckout({secret,onError}:{secret:string;onError:(error:string)=>void}){
