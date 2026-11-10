@@ -28,7 +28,15 @@ function EmbeddedCheckout({secret,onError}:{secret:string;onError:(error:string)
      try{
       const resultConfirm=await result.actions!.confirm({formConfirmEvent:event,returnUrl:window.location.origin+'/bestellung'});
       if(resultConfirm.type==='error'&&active)onError(resultConfirm.error?.message||'Stripe konnte die Zahlung nicht bestätigen.');
-     }catch(err){if(active)onError(err instanceof Error?err.message:'Zahlung konnte nicht bestätigt werden. Bitte versuche es erneut.')}
+     }catch(err){
+      if(!active)return;
+      const e=err as {message?:unknown;code?:unknown;type?:unknown}|null;
+      const message=e&&typeof e.message==='string'&&e.message.trim()?e.message.trim():null;
+      const code=e&&typeof e.code==='string'?e.code:null;
+      const kind=e&&typeof e.type==='string'?e.type:null;
+      console.error('Stripe-Checkout-Bestätigung fehlgeschlagen',err);
+      onError([message||'Die Stripe-Bestätigung ist fehlgeschlagen.',code?'Fehlercode: '+code:null,kind?'Typ: '+kind:null].filter(Boolean).join(' '));
+     }
     });
    }).catch(()=>{if(active)onError('Die Zahlungsmaske ist zurzeit nicht erreichbar.')});
   }catch{onError('Die Zahlungsmaske konnte nicht initialisiert werden.')}
