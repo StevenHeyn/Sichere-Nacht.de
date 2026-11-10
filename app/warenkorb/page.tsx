@@ -6,10 +6,35 @@ import {CartDraft,loadCart,saveCart} from '../../lib/cart';
 type Product={sku:string;name:string;priceCents:number;image:string|null};
 const products=new Map((productsData as Product[]).map(p=>[p.sku,p]));
 const money=(c:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(c/100);
+type CheckoutFormInstance={mount:(selector:string)=>void;on:(event:'confirm',handler:(event:unknown)=>void)=>void;unmount?:()=>void;destroy?:()=>void};
+type CheckoutFormSDK={createForm:(options:{layout:'expanded'})=>CheckoutFormInstance;loadActions:()=>Promise<{type:string;actions?:{confirm:(options:{formConfirmEvent:unknown})=>Promise<unknown>}} >};
+type StripeJsInstance={initCheckoutFormSdk:(options:{clientSecret:string;appearance:Record<string,unknown>})=>CheckoutFormSDK};
+declare global { interface Window {Stripe?: (key:string)=>StripeJsInstance} }
+function EmbeddedCheckout({secret,onError}:{secret:string;onError:(error:string)=>void}){
+ useEffect(()=>{
+  let active=true;let form:CheckoutFormInstance|undefined;
+  const publishableKey=process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  if(!publishableKey||!window.Stripe){onError('Stripe ist noch nicht vollständig eingerichtet. Bitte später erneut versuchen.');return;}
+  try{
+   const stripe=window.Stripe(publishableKey);
+   const checkout=stripe.initCheckoutFormSdk({clientSecret:secret,appearance:{theme:'stripe',labels:'auto',inputs:'spaced',variables:{borderRadius:'4px',colorBackground:'#ffffff',colorDanger:'#df1b41',colorPrimary:'#0570de',colorSuccess:'#00c853',colorText:'#30313d',fontFamily:'default',fontSizeBase:'16px',spacingUnit:'4px'}}});
+   form=checkout.createForm({layout:'expanded'});
+   form.mount('#stripe-checkout-form');
+   checkout.loadActions().then(result=>{
+    if(!active)return;
+    if(result.type!=='success'||!result.actions){onError('Die Zahlungsmaske konnte nicht geladen werden.');return;}
+    form?.on('confirm',async event=>{try{await result.actions!.confirm({formConfirmEvent:event})}catch{if(active)onError('Zahlung konnte nicht bestätigt werden. Bitte versuche es erneut.')}});
+   }).catch(()=>{if(active)onError('Die Zahlungsmaske ist zurzeit nicht erreichbar.')});
+  }catch{onError('Die Zahlungsmaske konnte nicht initialisiert werden.')}
+  return ()=>{active=false;try{form?.unmount?.()}catch{/* Stripe form is already gone */}}
+ },[secret,onError]);
+ return <div style={{background:'#fff',borderRadius:14,padding:16,color:'#152433'}}><div id="stripe-checkout-form"/><p style={{fontSize:12,color:'#465868',marginTop:12}}>Die Zahlungsdaten werden direkt über Stripe verarbeitet. Deine Bestellung gilt erst nach bestätigter Zahlung als bezahlt.</p></div>
+}
 export default function CartPage(){
  const [cart,setCart]=useState<CartDraft|null>(null);
  const [checkoutBusy,setCheckoutBusy]=useState(false);
  const [checkoutError,setCheckoutError]=useState('');
+ const [checkoutSecret,setCheckoutSecret]=useState('');
  useEffect(()=>{setCart(loadCart())},[]);
  const lines=useMemo(()=>cart?.items.map(line=>({...line,product:products.get(line.sku)}))||[],[cart]);
  const invalid=lines.filter(l=>!l.product);
@@ -20,11 +45,11 @@ export default function CartPage(){
  async function startCheckout(){
   if(!cart||checkoutBusy)return;
   setCheckoutBusy(true);setCheckoutError('');
-  try{const response=await fetch('/api/checkout',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({items:cart.items,installation:cart.installation,vpId:cart.vpId})});const payload=await response.json();if(!response.ok)throw new Error(payload.error||'Checkout derzeit nicht verfügbar');if(typeof payload.url!=='string'||!payload.url.startsWith('https://checkout.stripe.com/'))throw new Error('Ungültige Zahlungsadresse');window.location.assign(payload.url);}catch(e){setCheckoutError(e instanceof Error?e.message:'Checkout derzeit nicht möglich');setCheckoutBusy(false);}
+  try{const response=await fetch('/api/checkout',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({items:cart.items,installation:cart.installation,vpId:cart.vpId})});const payload=await response.json();if(!response.ok)throw new Error(payload.error||'Checkout derzeit nicht verfügbar');if(typeof payload.client_secret!=='string'||!payload.client_secret)throw new Error('Ungültige Zahlungsfreigabe');setCheckoutSecret(payload.client_secret);setCheckoutBusy(false);}catch(e){setCheckoutError(e instanceof Error?e.message:'Checkout derzeit nicht möglich');setCheckoutBusy(false);}
  }
- function update(items:CartDraft['items']){if(!cart)return;setCart(saveCart({items,installation:cart.installation,installationZip:cart.installationZip,source:cart.source}));}
- function setInstallation(installation:boolean){if(!cart)return;setCart(saveCart({items:cart.items,installation,installationZip:cart.installationZip,source:cart.source}));}
- function setZip(zip:string){if(!cart)return;setCart(saveCart({items:cart.items,installation:cart.installation,installationZip:zip.replace(/\D/g,'').slice(0,5),source:cart.source}));}
+ function update(items:CartDraft['items']){if(!cart)return;setCheckoutSecret('');setCart(saveCart({items,installation:cart.installation,installationZip:cart.installationZip,source:cart.source}));}
+ function setInstallation(installation:boolean){if(!cart)return;setCheckoutSecret('');setCart(saveCart({items:cart.items,installation,installationZip:cart.installationZip,source:cart.source}));}
+ function setZip(zip:string){if(!cart)return;setCheckoutSecret('');setCart(saveCart({items:cart.items,installation:cart.installation,installationZip:zip.replace(/\D/g,'').slice(0,5),source:cart.source}));}
  return <main className="wrap" style={{paddingBottom:80}}><nav className="nav"><Link href="/" className="brand">◈ SICHERE <span className="accent">NACHT</span></Link><Link href="/shop">Zum Shop</Link></nav><p className="accent">DEINE ZUSAMMENSTELLUNG</p><h1>Warenkorb</h1><p>Alle Preise inklusive 19 % Mehrwertsteuer. Noch kein verbindlicher Kauf: Die Zahlungsfunktion folgt nach der technischen und rechtlichen Freigabe.</p>
  {!cart?<p>Warenkorb wird geladen …</p>:lines.length===0?<div className="card"><h2>Dein Warenkorb ist leer.</h2><p>Stelle deine Alarmanlage im Konfigurator zusammen oder wähle einzelne Artikel aus.</p><div className="row"><Link className="button" href="/konfigurator">Zum Konfigurator</Link><Link className="button secondary" href="/shop">Ajax-Produkte ansehen</Link></div></div>:<div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',alignItems:'start'}}>
  <section className="card"><h2>Produkte ({lines.reduce((n,l)=>n+l.quantity,0)})</h2>{lines.map(l=><div key={l.sku} style={{display:'grid',gridTemplateColumns:'68px 1fr',gap:14,borderBottom:'1px solid #30445b',padding:'16px 0'}}>
@@ -36,6 +61,6 @@ export default function CartPage(){
 
  <div style={{display:'flex',justifyContent:'space-between',gap:12,marginTop:16}}><span>Versand Deutschland (inkl. MwSt.)</span><strong>{money(shipping)}</strong></div><hr/><div style={{display:'flex',justifyContent:'space-between',gap:12}}> <span>Gesamt inkl. MwSt.</span><strong className="price">{money(total)}</strong></div><p>Darin enthaltene MwSt.: {money(Math.round(total*19/119))}</p><p className="note">Inklusive 9,90 € Versandpauschale für Lieferungen innerhalb Deutschlands.</p>
  {invalid.length>0&&<p style={{color:'#ffb38a'}}>Einige Artikel sind nicht mehr im aktuellen Katalog. Bitte prüfe die Auswahl.</p>}
- <button type="button" className="button" onClick={startCheckout} disabled={process.env.NEXT_PUBLIC_CHECKOUT_ENABLED!=='true'||checkoutBusy||invalid.length>0||cart.installation} style={{width:'100%',cursor:process.env.NEXT_PUBLIC_CHECKOUT_ENABLED==='true'?'pointer':'not-allowed'}}>{checkoutBusy?'Weiterleitung …':process.env.NEXT_PUBLIC_CHECKOUT_ENABLED==='true'?'Sicher mit Stripe bezahlen':'Onlinezahlung noch nicht freigeschaltet'}</button>{checkoutError&&<p role="alert" style={{color:'#ffb38a'}}>{checkoutError}</p>}<p className="note">Stripe wird erst nach Einrichtung der Zahlungsdaten, Versandkosten und rechtlicher Prüfung freigeschaltet. Montagebuchungen benötigen eine separate Bestätigung.</p><Link href="/konfigurator">Konfiguration anpassen</Link></aside></div>}
+ {!checkoutSecret&&<button type="button" className="button" onClick={startCheckout} disabled={process.env.NEXT_PUBLIC_CHECKOUT_ENABLED!=='true'||checkoutBusy||invalid.length>0||cart.installation} style={{width:'100%',cursor:process.env.NEXT_PUBLIC_CHECKOUT_ENABLED==='true'?'pointer':'not-allowed'}}>{checkoutBusy?'Zahlungsmaske wird vorbereitet …':process.env.NEXT_PUBLIC_CHECKOUT_ENABLED==='true'?'Sicher mit Stripe bezahlen':'Onlinezahlung noch nicht freigeschaltet'}</button>}{checkoutSecret&&<><h3>Sicher bezahlen</h3><EmbeddedCheckout secret={checkoutSecret} onError={setCheckoutError}/><button type="button" className="button secondary" onClick={()=>{setCheckoutSecret('');setCheckoutError('')}}>Zahlung schließen</button></>}{checkoutError&&<p role="alert" style={{color:'#ffb38a'}}>{checkoutError}</p>}<p className="note">Stripe wird erst nach Einrichtung der Zahlungsdaten, Versandkosten und rechtlicher Prüfung freigeschaltet. Montagebuchungen benötigen eine separate Bestätigung.</p><Link href="/konfigurator">Konfiguration anpassen</Link></aside></div>}
  </main>;
 }
