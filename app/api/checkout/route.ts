@@ -6,8 +6,13 @@ const priceBySku=new Map(products.map(p=>[p.sku,p]));
 const error=(message:string,status:number)=>NextResponse.json({error:message},{status});
 const intIn=(v:unknown,min:number,max:number)=>typeof v==='number'&&Number.isInteger(v)&&v>=min&&v<=max;
 export async function POST(request:Request){
- const enabled=process.env.CHECKOUT_ENABLED==='true'&&process.env.PAYMENTS_LIVE_APPROVED==='true';
  const secret=process.env.STRIPE_SECRET_KEY;
+ const isStripeTest=Boolean(secret?.startsWith('sk_test_'));
+ const isStripeLive=Boolean(secret?.startsWith('sk_live_'));
+ const enabled=process.env.CHECKOUT_ENABLED==='true'&&(
+  (isStripeTest&&process.env.VERCEL_ENV==='preview'&&process.env.CHECKOUT_TEST_ENABLED==='true')||
+  (isStripeLive&&process.env.VERCEL_ENV==='production'&&process.env.PAYMENTS_LIVE_APPROVED==='true')
+ );
  const base=process.env.NEXT_PUBLIC_SITE_URL;
  if(!enabled||!secret||!base||!process.env.STRIPE_WEBHOOK_SECRET){
   return error('Der Bezahlvorgang ist noch nicht freigeschaltet. Bitte später erneut versuchen.',503);
