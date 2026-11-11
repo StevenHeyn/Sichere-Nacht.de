@@ -28,13 +28,13 @@ export default async function Bestellung({searchParams}:{searchParams:Promise<{s
   <h1>{state==='paid'?'Testzahlung erfolgreich!':state==='pending'?'Zahlung wird geprüft':'Zahlungsstatus'}</h1>
   {state==='paid'?<>
    <p>Stripe hat die Zahlung serverseitig als <strong>bezahlt</strong> bestätigt. Das war eine Testzahlung: Es wurde kein echtes Geld abgebucht.</p>
-   <p>Die Bestellung wurde noch nicht automatisch gespeichert oder an den Versand übergeben. Eine verbindliche Bestellbestätigung wird derzeit nicht versendet.</p>
+   <p>Nach erfolgreicher Testzahlung wird die Bestellung über unseren Stripe-Webhook automatisch in der Bestellverwaltung erfasst. Eine Bestätigung wird im Testbetrieb ausschließlich an das interne Testpostfach gesendet. Es erfolgt kein echter Versand und keine verbindliche Kundenbestellung.</p>
   </>:state==='pending'?<>
    <p>Stripe meldet noch keine abgeschlossene und bezahlte Zahlung. Bei manchen Zahlungsarten dauert die Verarbeitung etwas länger.</p>
-   <p>Bitte prüfe den Status später erneut. Eine Bestellbestätigung erfolgt erst nach der serverseitigen Zahlungsprüfung und Einrichtung der Bestellverwaltung.</p>
+   <p>Bitte prüfe den Status später erneut. Eine Bestellbestätigung wird erst nach serverseitig bestätigter Zahlung verarbeitet; im Testbetrieb wird sie nur an unser internes Testpostfach gesendet.</p>
   </>:<>
    <p>Der Zahlungsstatus konnte noch nicht serverseitig bestätigt werden. Eine Weiterleitung auf diese Seite ist allein kein Zahlungsnachweis.</p>
-   <p>Öffne diese Seite nach Abschluss einer neuen Testzahlung erneut. Die Bestellverwaltung und Bestätigungsmails sind noch nicht aktiviert.</p>
+   <p>Öffne diese Seite nach Abschluss einer neuen Testzahlung erneut. Falls Stripe die Zahlung bereits bestätigt hat, kann die serverseitige Bestellverarbeitung unabhängig von dieser Anzeige bereits erfolgen.</p>
   </>}
   <Link className="button" href="/shop">Zum Shop</Link>
  </main>;
