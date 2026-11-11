@@ -17,3 +17,4 @@ export default function Wertvergleich(){
  <p className="note">Rechenbeispiel, keine Preiszusage. Der tatsächliche Systempreis hängt von den gewählten Komponenten ab. Immobilienwert und Sicherheitsbudget sind unabhängig voneinander.</p></div>
  <div className="card"><p className="eyebrow">NICHT NUR EINE FRAGE DES GELDES</p><h3>Wertsachen kann man ersetzen. Das Gefühl, zu Hause sicher zu sein, nicht so einfach.</h3><p>Ein Einbruch kann die Privatsphäre und das Sicherheitsgefühl stark beeinträchtigen. Mit einem durchdachten System kannst du wichtige Zugänge und Bereiche überwachen.</p><p>Finde heraus, welche Ausstattung zu deiner Wohnung oder deinem Haus passt. Ohne Druck, mit nachvollziehbaren Empfehlungen.</p><Link href="/sicherheitscheck" className="button">Kostenlosen Sicherheitscheck starten →</Link><p className="note">Dauert nur wenige Minuten. Die Empfehlung ist unverbindlich.</p></div>
  </div></div></section>;
+}
