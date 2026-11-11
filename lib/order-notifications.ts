@@ -1,12 +1,12 @@
 import 'server-only';
 import {randomUUID} from 'node:crypto';
-import {invoicePdf,type InvoiceSnapshot} from './invoice-pdf';
+import {invoicePdf,confirmationPdf,type InvoiceSnapshot} from './invoice-pdf';
 type DbOrder={
- stripe_session_id:string;customer_email:string|null;customer_name:string|null;
- amount_total:number;amount_tax:number|null;shipping_country:string|null;
+ stripe_session_id:string;created_at?:string;customer_email:string|null;customer_name:string|null;
+ amount_total:number;amount_tax:number|null;shipping_amount:number|null;currency:string;shipping_country:string|null;
  shipped_at:string|null;invoice_number:string|null;invoice_snapshot:InvoiceSnapshot|null;
  test_mode:boolean;
- items:Array<{name:string;quantity:number;amount_total:number|null}>;
+ items:Array<{name:string;sku:string|null;quantity:number;amount_total:number|null}>;
  shipping_address:Record<string,unknown>|null;
  billing_address:Record<string,unknown>|null;
 };
@@ -55,11 +55,27 @@ export async function dispatchOrderMail(sessionId:string,kind:'confirmation'|'in
   const attachments: {filename:string;content:string;content_type:string}[]=[];
   let html:string;
   if(kind==='confirmation'){
-   html='<h1>Vielen Dank für deine Bestellung!</h1><p>Wir haben die Zahlung erhalten und bereiten deine Bestellung vor.</p>'+
-     '<p>Deine Artikel:</p><ul>'+o.items.map(i=>'<li>'+i.quantity+' &times; '+escapeHtml(i.name)+'</li>').join('')+'</ul>'+ 
-     '<p>Gesamtbetrag inklusive Versand: <strong>'+(o.amount_total/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'})+'</strong></p>'+
-     '<p>Dies ist eine Bestellbestätigung, keine Versandbestätigung und keine Rechnung.</p>'+ 
-     '<p>H&amp;K Projekt UG (haftungsbeschränkt), Lehmkoppel 7, 25499 Tangstedt</p>';
+   const attachment=confirmationPdf({
+    stripe_session_id:o.stripe_session_id,created_at:o.created_at,
+    customer_name:o.customer_name,customer_email:o.customer_email,
+    billing_address:o.billing_address,shipping_address:o.shipping_address,
+    amount_total:o.amount_total,amount_tax:o.amount_tax,shipping_amount:o.shipping_amount,
+    currency:o.currency,items:o.items,test_mode:o.test_mode
+   },issuer());
+   attachments.push({filename:'Auftragsbestaetigung-Sichere-Nacht.pdf',
+    content:attachment.toString('base64'),content_type:'application/pdf'});
+   html='<div style="max-width:640px;margin:auto;font-family:Arial,sans-serif;color:#202833">'+
+     '<div style="border-top:8px solid #c51f2b;padding:26px 28px;background:#151c26;color:white">'+
+     '<strong style="font-size:24px">SICHERE <span style="color:#ee4651">NACHT</span></strong></div>'+
+     '<div style="padding:28px"><h1 style="font-size:24px">Vielen Dank für deine Bestellung!</h1>'+
+     '<p>Wir haben die Zahlung erhalten und bereiten deine Bestellung vor.</p>'+
+     '<p><strong>Deine Artikel</strong></p><ul>'+o.items.map(i=>'<li>'+i.quantity+' &times; '+escapeHtml(i.name)+'</li>').join('')+'</ul>'+
+     '<p style="padding:16px;background:#f5f6f7"><strong>Gesamtbetrag inklusive Versand: '+
+     (o.amount_total/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'})+'</strong></p>'+
+     '<p>Deine Auftragsbestätigung im passenden Sichere-Nacht-Design findest du als PDF im Anhang.</p>'+
+     '<p style="font-size:12px;color:#67717d">Dies ist keine Rechnung und keine Versandbestätigung.</p>'+
+     '</div><div style="padding:16px 28px;border-top:1px solid #ddd;font-size:12px;color:#67717d">'+
+     'H&amp;K Projekt UG (haftungsbeschränkt) · Lehmkoppel 7 · 25499 Tangstedt</div></div>';
   }else{
    const snapshot=o.invoice_snapshot;
    if(!snapshot||!o.invoice_number)throw new Error('Rechnungs-Snapshot fehlt');
