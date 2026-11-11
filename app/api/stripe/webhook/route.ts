@@ -1,6 +1,7 @@
 import {createHmac,timingSafeEqual} from 'node:crypto';
 import {NextResponse} from 'next/server';
 import {ordersConfigured,savePaidOrder,type StoredOrder} from '../../../../lib/orders';
+import {dispatchOrderMail} from '../../../../lib/order-notifications';
 
 export const runtime='nodejs';
 
@@ -103,6 +104,8 @@ export async function POST(request:Request){
   const order=await verifiedPaidOrder(event,object.id);
   if(!order)return NextResponse.json({received:true,payment_pending:true});
   await savePaidOrder(order);
+  // Confirmations are queued durably in the DB and retried from admin when mail config/provider is unavailable.
+  try{await dispatchOrderMail(order.stripe_session_id,'confirmation')}catch(err){console.error('Bestätigung vorgemerkt, E-Mail-Versand ausstehend',err instanceof Error?err.message:'Unbekannt')}
   console.info('Stripe-Testbestellung gespeichert',{sessionId:order.stripe_session_id,eventId:event.id});
   return NextResponse.json({received:true,stored:true});
  }catch(e){
