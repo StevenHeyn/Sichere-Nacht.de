@@ -85,7 +85,7 @@ export async function dispatchOrderMail(sessionId:string,kind:'confirmation'|'in
 }
 async function readOrder(sessionId:string):Promise<DbOrder|null>{
  const {url,key}=dbBase();
- const r=await fetch(url+'/rest/v1/orders?select=stripe_session_id,customer_email,customer_name,amount_total,amount_tax,shipping_country,shipped_at,invoice_number,invoice_snapshot,test_mode&stripe_session_id=eq.'+encodeURIComponent(sessionId)+'&limit=1',
+ const r=await fetch(url+'/rest/v1/orders?select=stripe_session_id,customer_email,customer_name,amount_total,amount_tax,shipping_country,shipped_at,invoice_number,invoice_snapshot,test_mode,billing_address,shipping_address,items&stripe_session_id=eq.'+encodeURIComponent(sessionId)+'&limit=1',
  {headers:{apikey:key,Authorization:'Bearer '+key},cache:'no-store'});
  if(!r.ok)throw new Error('Bestellung nicht lesbar');
  const list=await r.json() as DbOrder[];
