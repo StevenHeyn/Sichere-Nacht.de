@@ -18,7 +18,7 @@ export type ConfirmationSnapshot={
 };
 type Doc={kind:'invoice'|'confirmation';number:string;date:string;deliveryDate?:string;
  customerName:string|null;email:string|null;billing:Address;items:Item[];
- total:number;tax:number|null;shipping:number|null;test:boolean};
+ total:number;tax:number|null;shipping:number|null;test:boolean;currency:string};
 const money=(n:number)=>new Intl.NumberFormat('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n/100)+' EUR';
 const date=(s:string)=>{const d=new Date(s);return Number.isNaN(d.valueOf())?s:d.toLocaleDateString('de-DE',{timeZone:'Europe/Berlin'})};
 const enc=(s:string)=>s.replace(/€/g,'EUR').replace(/[–—]/g,'-').replace(/[„“”]/g,'"').replace(/[\u0100-\uffff]/g,'?').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'');
@@ -167,7 +167,7 @@ export function invoicePdf(v:InvoiceSnapshot,issuer:Issuer):Buffer{
   total:v.amount_total,tax:v.amount_tax,shipping:v.shipping_amount,test:v.test_mode,currency:v.currency},issuer);
 }
 export function confirmationPdf(v:ConfirmationSnapshot,issuer:Issuer):Buffer{
- return pdf({kind:'confirmation',number:v.stripe_session_id,date:v.created_at||new Date().toISOString(),
+ return pdf({kind:'confirmation',number:'SN-AB-'+v.stripe_session_id.slice(-12).toUpperCase(),date:v.created_at||new Date().toISOString(),
   customerName:v.customer_name,email:v.customer_email,billing:v.billing_address||v.shipping_address,
   items:v.items,total:v.amount_total,tax:v.amount_tax,shipping:v.shipping_amount,test:v.test_mode,currency:v.currency},issuer);
 }
