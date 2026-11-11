@@ -51,7 +51,7 @@ export function invoicePdf(invoice:InvoiceSnapshot,issuer:{name:string;street:st
  }
  if(invoice.shipping_amount)lines.push('Versandkosten: '+euros(invoice.shipping_amount));
  lines.push('','Nettobetrag: '+euros(net),
- 'Umsatzsteuer (laut Stripe): '+euros(invoice.amount_tax),
+ 'Umsatzsteuer 19 %: '+euros(invoice.amount_tax),
  'Gesamtbetrag brutto: '+euros(invoice.amount_total),'',
  'Zahlungsstatus: Bereits online bezahlt. Keine weitere Zahlung erforderlich.',
  'Bitte diese Rechnung für Ihre Unterlagen aufbewahren.');
