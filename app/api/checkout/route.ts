@@ -22,8 +22,8 @@ export async function POST(request:Request){
  const body=await request.json().catch(()=>null);
  if(!body||!Array.isArray(body.items)||body.items.length<1||body.items.length>50)return error('Ungültiger Warenkorb.',400);
  const country=body.shippingCountry;
- if(country!=='DE'&&country!=='AT')return error('Bitte ein gültiges Lieferland wählen.',400);
- const shipping=country==='AT'?1990:990;
+ if(country!=='DE')return error('Derzeit liefern wir ausschließlich innerhalb Deutschlands.',400);
+ const shipping=990;
  if(body.installation===true)return error('Montagebuchungen sind derzeit nur nach individueller Standortprüfung möglich. Bitte die Montageoption entfernen.',409);
  const cart=new Map<string,number>();
  for(const item of body.items as OrderLine[]){
@@ -59,7 +59,7 @@ export async function POST(request:Request){
  form.set('shipping_options[0][shipping_rate_data][fixed_amount][amount]',String(shipping));
  form.set('shipping_options[0][shipping_rate_data][fixed_amount][currency]','eur');
  form.set('shipping_options[0][shipping_rate_data][tax_behavior]','inclusive');
- form.set('shipping_options[0][shipping_rate_data][display_name]',country==='AT'?'Standardversand Österreich':'Standardversand Deutschland');
+ form.set('shipping_options[0][shipping_rate_data][display_name]','Standardversand Deutschland');
  const vp=typeof body.vpId==='string'?body.vpId.trim().toUpperCase():'';
  const registered=(process.env.VALID_PARTNER_IDS||'').split(',').map(x=>x.trim().toUpperCase()).filter(Boolean);
  if(/^VP-[A-Z0-9]{3,16}$/.test(vp)&&registered.includes(vp))form.set('metadata[vp_id]',vp);
