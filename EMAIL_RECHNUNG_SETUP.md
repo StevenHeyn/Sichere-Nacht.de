@@ -12,15 +12,15 @@
 1. Resend-Konto eröffnen und die Domain sichere-nacht.de für ausgehende Nachrichten per DNS SPF/DKIM verifizieren.
 2. Environment Variablen serverseitig hinterlegen:
    - RESEND_API_KEY (secret, nur Preview)
-   - ORDER_EMAIL_FROM (z.B. Sichere Nacht <bestellung@sichere-nacht.de>)
-   - ORDER_REPLY_TO (beantwortbare Kundenservice-Adresse)
+   - ORDER_EMAIL_FROM (z.B. Sichere Nacht <bestellungen@sichere-nacht.de>)
+   - ORDER_REPLY_TO (bestellungen@sichere-nacht.de, sofern das Postfach empfangsbereit ist)
    - ORDER_EMAIL_TEST_TO (eigene interne Testadresse)
    - INVOICE_COMPANY_NAME (Rechnungssteller, vollständiger Firmierung)
    - INVOICE_COMPANY_STREET (Straße und Hausnummer)
    - INVOICE_COMPANY_CITY (Postleitzahl und Ort)
    - INVOICE_VAT_ID (geprüfte USt-IdNr.)
    - INVOICE_REGISTRY (z.B. Amtsgericht und HRB)
-   - INVOICE_CONTACT_EMAIL (gültige E-Mail)
+   - INVOICE_CONTACT_EMAIL (bestellungen@sichere-nacht.de, sofern empfangsbereit)
 3. Testbranch deployen; Webhook auf den neuen Preview-Zweig ausrichten und Vercel-Bypass setzen.
 4. Stripe Testzahlung durchführen, Supabase order_mail_jobs prüfen; Bestätigung muss an ORDER_EMAIL_TEST_TO ankommen.
 5. Für Rechnungsprüfung müssen Stripe Tax/Steuerraten geprüft werden. Die bestehende Testbestellung hatte amount_tax=0 trotz Shop-Hinweis 'inklusive 19 % MwSt.' und wird daher bewusst blockiert. Erst mit bestätigter korrekter Steuerberechnung weitere Versand- und Rechnungstests durchführen.
