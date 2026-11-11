@@ -6,6 +6,9 @@ type DbOrder={
  amount_total:number;amount_tax:number|null;shipping_country:string|null;
  shipped_at:string|null;invoice_number:string|null;invoice_snapshot:InvoiceSnapshot|null;
  test_mode:boolean;
+ items:Array<{name:string;quantity:number;amount_total:number|null}>;
+ shipping_address:Record<string,unknown>|null;
+ billing_address:Record<string,unknown>|null;
 };
 const dbBase=()=>{const url=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!url||!key)throw new Error('Supabase nicht konfiguriert');return {url:new URL(url).origin,key}};
 async function rpc<T>(name:string,args:Record<string,unknown>):Promise<T>{
@@ -27,6 +30,7 @@ function escapeHtml(s:string){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'
 function verifyTax(o:DbOrder){
  if(o.shipping_country!=='DE')throw new Error('Rechnungen für Auslandslieferungen benötigen gesonderte Steuerprüfung');
  if(o.amount_tax===null||o.amount_tax<=0)throw new Error('Steuerbetrag fehlt oder ist 0; Rechnung gesperrt');
+ if(!o.billing_address||!o.customer_name)throw new Error('Rechnungsadresse oder Kundenname fehlt');
  const expected=Math.round(o.amount_total*19/119);
  if(Math.abs(expected-o.amount_tax)>4)throw new Error('Stripe-Steuerbetrag entspricht nicht 19 Prozent des Bruttobetrags');
 }
@@ -52,8 +56,10 @@ export async function dispatchOrderMail(sessionId:string,kind:'confirmation'|'in
   let html:string;
   if(kind==='confirmation'){
    html='<h1>Vielen Dank für deine Bestellung!</h1><p>Wir haben die Zahlung erhalten und bereiten deine Bestellung vor.</p>'+
-     '<p>Gesamtbetrag: <strong>'+(o.amount_total/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'})+'</strong></p>'+
-     '<p>Dies ist eine Bestellbestätigung, keine Versandbestätigung und keine Rechnung.</p>';
+     '<p>Deine Artikel:</p><ul>'+o.items.map(i=>'<li>'+i.quantity+' &times; '+escapeHtml(i.name)+'</li>').join('')+'</ul>'+ 
+     '<p>Gesamtbetrag inklusive Versand: <strong>'+(o.amount_total/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'})+'</strong></p>'+
+     '<p>Dies ist eine Bestellbestätigung, keine Versandbestätigung und keine Rechnung.</p>'+ 
+     '<p>H&amp;K Projekt UG (haftungsbeschränkt), Lehmkoppel 7, 25499 Tangstedt</p>';
   }else{
    const snapshot=o.invoice_snapshot;
    if(!snapshot||!o.invoice_number)throw new Error('Rechnungs-Snapshot fehlt');
