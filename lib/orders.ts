@@ -54,6 +54,6 @@ export async function savePaidOrder(order:StoredOrder){
  });
 }
 export async function listOrders(){
- const r=await query('orders?select=stripe_session_id,status,amount_total,currency,customer_email,customer_name,shipping_country,shipping_address,vp_id,test_mode,items,created_at&order=created_at.desc&limit=100',{method:'GET'});
+ const r=await query('orders?select=stripe_session_id,status,amount_total,currency,customer_email,customer_name,shipping_country,shipping_address,vp_id,test_mode,items,created_at,fulfillment_status,shipped_at,invoice_number&order=created_at.desc&limit=100',{method:'GET'});
  return r.json();
 }
