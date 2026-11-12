@@ -49,13 +49,13 @@ export default function CartPage(){
  const [checkoutBusy,setCheckoutBusy]=useState(false);
  const [checkoutError,setCheckoutError]=useState('');
  const [checkoutSecret,setCheckoutSecret]=useState('');
- const [shippingCountry,setShippingCountry]=useState<'DE'|'AT'>('DE');
+ const shippingCountry='DE' as const;
  useEffect(()=>{setCart(loadCart())},[]);
  const lines=useMemo(()=>cart?.items.map(line=>({...line,product:products.get(line.sku)}))||[],[cart]);
  const invalid=lines.filter(l=>!l.product);
  const subtotal=lines.reduce((sum,l)=>sum+(l.product?.priceCents||0)*l.quantity,0);
  const montage=cart?.installation?19900:0;
- const shipping=lines.length>0?(shippingCountry==='AT'?1990:990):0;
+ const shipping=lines.length>0?990:0;
  const total=subtotal+montage+shipping;
  async function startCheckout(){
   if(!cart||checkoutBusy)return;
@@ -74,9 +74,10 @@ export default function CartPage(){
  <label style={{marginTop:22}}><input type="checkbox" checked={cart.installation} onChange={e=>setInstallation(e.target.checked)}/> Optionale Montage (+199,00 € brutto)</label>
  {cart.installation&&<><label htmlFor="plz">Montage-PLZ (Hamburg und Umgebung)</label><input id="plz" inputMode="numeric" value={cart.installationZip} maxLength={5} placeholder="z. B. 20095" onChange={e=>setZip(e.target.value)}/><p className="note">Die Montage ist nur nach Prüfung von Standort und Leistungsumfang buchbar. Ein PLZ-Check wird noch ergänzt.</p></>}
 
- <label htmlFor="shipping-country" style={{marginTop:16}}>Lieferland</label><select id="shipping-country" value={shippingCountry} onChange={e=>{setShippingCountry(e.target.value as 'DE'|'AT');setCheckoutSecret('');setCheckoutError('')}}><option value="DE">Deutschland</option><option value="AT">Österreich</option></select>
- <div style={{display:'flex',justifyContent:'space-between',gap:12,marginTop:16}}><span>Versand {shippingCountry==='AT'?'Österreich':'Deutschland'} (inkl. MwSt.)</span><strong>{money(shipping)}</strong></div><hr/><div style={{display:'flex',justifyContent:'space-between',gap:12}}> <span>Gesamt inkl. MwSt.</span><strong className="price">{money(total)}</strong></div><p>Darin enthaltene MwSt.: {money(Math.round(total*19/119))}</p><p className="note">Inklusive {money(shipping)} Versandpauschale nach {shippingCountry==='AT'?'Österreich':'Deutschland'}. Das Lieferland in der Zahlungsmaske ist entsprechend festgelegt.</p>
+ <p style={{marginTop:16}}><strong>Lieferland:</strong> Deutschland (andere Länder derzeit nicht verfügbar)</p>
+ <div style={{display:'flex',justifyContent:'space-between',gap:12,marginTop:16}}><span>Versand Deutschland (inkl. MwSt.)</span><strong>{money(shipping)}</strong></div><hr/><div style={{display:'flex',justifyContent:'space-between',gap:12}}> <span>Gesamt inkl. MwSt.</span><strong className="price">{money(total)}</strong></div><p>Darin enthaltene MwSt.: {money(Math.round(total*19/119))}</p><p className="note">Inklusive {money(shipping)} Versandpauschale nach Deutschland. Das Lieferland in der Zahlungsmaske ist entsprechend festgelegt.</p>
  {invalid.length>0&&<p style={{color:'#ffb38a'}}>Einige Artikel sind nicht mehr im aktuellen Katalog. Bitte prüfe die Auswahl.</p>}
+ <p className="note">Mit dem Bestellabschluss gelten die Informationen zu <Link href="/agb">AGB</Link>, <Link href="/widerruf">Widerruf</Link> und <Link href="/datenschutz">Datenschutz</Link>. Bitte vor der Bestellung lesen.</p>
  {!checkoutSecret&&<button type="button" className="button" onClick={startCheckout} disabled={process.env.NEXT_PUBLIC_CHECKOUT_ENABLED!=='true'||checkoutBusy||invalid.length>0||cart.installation} style={{width:'100%',cursor:process.env.NEXT_PUBLIC_CHECKOUT_ENABLED==='true'?'pointer':'not-allowed'}}>{checkoutBusy?'Zahlungsmaske wird vorbereitet …':process.env.NEXT_PUBLIC_CHECKOUT_ENABLED==='true'?'Sicher mit Stripe bezahlen':'Onlinezahlung noch nicht freigeschaltet'}</button>}{checkoutSecret&&<><h3>Sicher bezahlen</h3><EmbeddedCheckout secret={checkoutSecret} onError={setCheckoutError}/><button type="button" className="button secondary" onClick={()=>{setCheckoutSecret('');setCheckoutError('')}}>Zahlung schließen</button></>}{checkoutError&&<p role="alert" style={{color:'#ffb38a'}}>{checkoutError}</p>}<p className="note">Testbetrieb: Nur Stripe-Testzahlungen. Montagebuchungen benötigen eine separate Bestätigung.</p><Link href="/konfigurator">Konfiguration anpassen</Link></aside></div>}
  </main>;
 }
