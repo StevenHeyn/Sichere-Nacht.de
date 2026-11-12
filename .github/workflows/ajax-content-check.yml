@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - feature/combined-shop-preview
+      - feature/ajax-catalog-content-0226
     paths:
       - "app/**"
       - "lib/**"
