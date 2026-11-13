@@ -6,7 +6,7 @@ import {SHOP_GROUPS,getShopGroup,ShopGroup} from '../../lib/shop-groups';
 import rawProducts from '../../products.json';
 import {catalogDetail} from '../../lib/ajax-catalog-content';
 type Product={sku:string;ean:string;name:string;shortDescription:string;category:string;line:string;priceCents:number;uvpCents:number;image:string|null};
-const products=rawProducts as Product[];
+const products=(rawProducts as Product[]).filter(p=>Number.isInteger(p.priceCents)&&p.priceCents>0);
 const productGroups=products.map(p=>({...p,group:getShopGroup(p)}));
 const groupCounts=Object.fromEntries(SHOP_GROUPS.map(g=>[g.id,g.id==='alle'?products.length:productGroups.filter(p=>p.group===g.id).length]));
 const euro=(cents:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(cents/100);
