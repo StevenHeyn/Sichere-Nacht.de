@@ -7,6 +7,7 @@ export default function Bestellungen(){
  const [orders,setOrders]=useState<Order[]>([]);
  const [message,setMessage]=useState('');
  const [busy,setBusy]=useState(false);
+ const [health,setHealth]=useState<null|{environment:string;database:{status:string;httpStatus?:number;note?:string};stripe:{status:string;httpStatus?:number;note?:string};mail:{status:string;httpStatus?:number;note?:string};webhookSecretConfigured:boolean;adminConfigured:boolean;invoiceDetailsConfigured:boolean;gates:{liveCheckout:boolean;siteIndexed:boolean};note:string}>(null);
  async function load(){
   setBusy(true);setMessage('');
   try{
@@ -15,6 +16,16 @@ export default function Bestellungen(){
    if(!r.ok)throw new Error(data.error||'Zugriff fehlgeschlagen');
    setOrders(data.orders);
   }catch(e){setOrders([]);setMessage(e instanceof Error?e.message:'Fehler beim Laden')}
+  finally{setBusy(false)}
+ }
+ async function loadHealth(){
+  setBusy(true);setMessage('');
+  try{
+   const r=await fetch('/api/admin/health',{headers:{Authorization:'Bearer '+token},cache:'no-store'});
+   const data=await r.json();
+   if(!r.ok)throw new Error(data.error||'Systemprüfung fehlgeschlagen');
+   setHealth(data);
+  }catch(e){setHealth(null);setMessage(e instanceof Error?e.message:'Systemprüfung fehlgeschlagen')}
   finally{setBusy(false)}
  }
  async function action(sessionId:string,operation:string){
@@ -37,9 +48,19 @@ export default function Bestellungen(){
   <section className="card" style={{maxWidth:550}}>
    <label htmlFor="admin-token">Admin-Zugriffsschlüssel</label>
    <input id="admin-token" type="password" autoComplete="off" value={token} onChange={e=>setToken(e.target.value)} placeholder="Admin-Schlüssel"/>
-   <div className="row"><button className="button" type="button" disabled={!token||busy} onClick={load}>{busy?'Bitte warten …':'Bestellungen laden'}</button><button className="button secondary" type="button" onClick={()=>{setToken('');setOrders([])}}>Sitzung beenden</button></div>
+   <div className="row"><button className="button" type="button" disabled={!token||busy} onClick={load}>{busy?'Bitte warten …':'Bestellungen laden'}</button><button className="button secondary" type="button" disabled={!token||busy} onClick={loadHealth}>Systemcheck</button><button className="button secondary" type="button" onClick={()=>{setToken('');setOrders([]);setHealth(null)}}>Sitzung beenden</button></div>
    {message&&<p role="status">{message}</p>}
   </section>
+  {health&&<section className="card" style={{marginTop:22}}>
+    <h2>Technischer Systemcheck ({health.environment})</h2>
+    <p><strong>Supabase:</strong> {health.database.status}{health.database.httpStatus?' (HTTP '+health.database.httpStatus+')':''} {health.database.note||''}</p>
+    <p><strong>Stripe-API:</strong> {health.stripe.status}{health.stripe.httpStatus?' (HTTP '+health.stripe.httpStatus+')':''} {health.stripe.note||''}</p>
+    <p><strong>Resend:</strong> {health.mail.status}{health.mail.httpStatus?' (HTTP '+health.mail.httpStatus+')':''} {health.mail.note||''}</p>
+    <p><strong>Webhook-Signatur:</strong> {health.webhookSecretConfigured?'Schlüssel hinterlegt':'Fehlt'} · <strong>Admin:</strong> {health.adminConfigured?'Konfiguriert':'Fehlt'}</p>
+    <p><strong>Rechnungsdaten:</strong> {health.invoiceDetailsConfigured?'Hinterlegt':'Unvollständig'}</p>
+    <p><strong>Echte Zahlungen:</strong> {health.gates.liveCheckout?'FREIGEGEBEN':'Gesperrt'} · <strong>Indexierung:</strong> {health.gates.siteIndexed?'Aktiv':'Deaktiviert'}</p>
+    <p className="note">{health.note}</p>
+   </section>}
   {orders.length>0?<section style={{marginTop:24}}>
    <p>{orders.length} Bestellungen (neueste zuerst, maximal 100)</p>
    {orders.map(o=><article className="card" key={o.stripe_session_id} style={{marginBottom:14}}>
