@@ -48,7 +48,7 @@ async function verifiedPaidOrder(event:StripeEvent,sessionId:string):Promise<Sto
  const inProduction=process.env.VERCEL_ENV==='production';
  const key=process.env.STRIPE_SECRET_KEY||'';
  const testAllowed=inPreview&&key.startsWith('sk_test_')&&session.livemode===false&&event.livemode===false;
- const liveAllowed=inProduction&&key.startsWith('sk_live_')&&session.livemode===true&&event.livemode===true&&process.env.PAYMENTS_LIVE_APPROVED==='true';
+ const liveAllowed=inProduction&&(key.startsWith('sk_live_')||key.startsWith('rk_live_'))&&session.livemode===true&&event.livemode===true&&process.env.PAYMENTS_LIVE_APPROVED==='true';
  if(!testAllowed&&!liveAllowed){
   throw new Error('Stripe-Modus nicht passend zur geprüften Checkout-Freigabe');
  }
