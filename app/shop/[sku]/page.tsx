@@ -15,7 +15,7 @@ export async function generateMetadata({params}:Props):Promise<Metadata>{
 }
 export default async function ProductPage({params}:Props){
  const {sku}=await params;const p=catalog.get(sku);
- if(!p)notFound();
+ if(!p||!Number.isInteger(p.priceCents)||p.priceCents<=0)notFound();
  const detail=catalogDetail(p.name);
  const related=products.filter(x=>x.sku!==p.sku&&x.category===p.category&&!!x.image).slice(0,4);
  return <main className="wrap" style={{paddingBottom:90}}><nav className="nav"><Link href="/" className="brand">◈ SICHERE <span className="accent">NACHT</span></Link><div className="row"><Link href="/shop">Alle Produkte</Link><Link href="/warenkorb" className="button secondary">Warenkorb</Link></div></nav>
