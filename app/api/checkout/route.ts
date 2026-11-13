@@ -25,7 +25,7 @@ export async function POST(request:Request){
  if(body.installation===true)return error('Montagebuchungen sind derzeit nur nach individueller Standortprüfung möglich. Bitte die Montageoption entfernen.',409);
  const cart=new Map<string,number>();
  for(const item of body.items as OrderLine[]){if(!item||typeof item.sku!=='string'||!intIn(item.quantity,1,30)||!priceBySku.has(item.sku))return error('Ungültige Produktdaten.',400);cart.set(item.sku,(cart.get(item.sku)||0)+item.quantity);if(cart.get(item.sku)!>30)return error('Maximale Stückzahl überschritten.',400)}
- const form=new URLSearchParams();applyCheckoutBranding(form);applyBuyerMetadata(form,buyer);
+ const form=new URLSearchParams();applyCheckoutBranding(form);applyBuyerMetadata(form,buyer,'form');
  form.set('mode','payment');form.set('ui_mode','form');form.set('return_url',origin+'/bestellung?session_id={CHECKOUT_SESSION_ID}');
  form.set('billing_address_collection','required');form.set('phone_number_collection[enabled]','false');form.set('shipping_address_collection[allowed_countries][0]',country);
  form.set('locale','de');form.set('automatic_tax[enabled]','true');form.set('submit_type','auto');form.set('integration_identifier','custom_embedded_web_0001');
