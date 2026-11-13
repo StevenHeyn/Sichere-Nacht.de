@@ -44,9 +44,13 @@ async function verifiedPaidOrder(event:StripeEvent,sessionId:string):Promise<Sto
  const session=await stripeGet<StripeSession>('checkout/sessions/'+encodeURIComponent(sessionId));
  if(session.id!==sessionId||session.object!=='checkout.session'||session.mode!=='payment')throw new Error('Stripe Session ungültig');
  if(session.status!=='complete'||session.payment_status!=='paid')return null;
- if(session.livemode!==false||event.livemode!==false||!process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_')){
-  // No live webhook processing until database, legal, and fulfillment checks are complete.
-  throw new Error('Live-Webhooks noch nicht freigegeben');
+ const inPreview=process.env.VERCEL_ENV==='preview';
+ const inProduction=process.env.VERCEL_ENV==='production';
+ const key=process.env.STRIPE_SECRET_KEY||'';
+ const testAllowed=inPreview&&key.startsWith('sk_test_')&&session.livemode===false&&event.livemode===false;
+ const liveAllowed=inProduction&&key.startsWith('sk_live_')&&session.livemode===true&&event.livemode===true&&process.env.PAYMENTS_LIVE_APPROVED==='true';
+ if(!testAllowed&&!liveAllowed){
+  throw new Error('Stripe-Modus nicht passend zur geprüften Checkout-Freigabe');
  }
  if(!Number.isInteger(session.amount_total)||session.amount_total<0||!session.currency)throw new Error('Stripe Session ohne Zahlungsbetrag');
  const params=new URLSearchParams({limit:'100'});
@@ -76,7 +80,7 @@ async function verifiedPaidOrder(event:StripeEvent,sessionId:string):Promise<Sto
   })),
   shipping_country:typeof shipping?.country==='string'?shipping.country:session.metadata?.shipping_country||null,
   vp_id:session.metadata?.vp_id||null,
-  test_mode:true
+  test_mode:!session.livemode
  };
 }
 export async function POST(request:Request){
@@ -106,7 +110,7 @@ export async function POST(request:Request){
   await savePaidOrder(order);
   // Confirmations are queued durably in the DB and retried from admin when mail config/provider is unavailable.
   try{await dispatchOrderMail(order.stripe_session_id,'confirmation')}catch(err){console.error('Bestätigung vorgemerkt, E-Mail-Versand ausstehend',err instanceof Error?err.message:'Unbekannt')}
-  console.info('Stripe-Testbestellung gespeichert',{sessionId:order.stripe_session_id,eventId:event.id});
+  console.info('Stripe-Bestellung gespeichert',{sessionId:order.stripe_session_id,eventId:event.id});
   return NextResponse.json({received:true,stored:true});
  }catch(e){
   console.error('Stripe-Webhookspeicherung fehlgeschlagen',e instanceof Error?e.message:'Unbekannt');
