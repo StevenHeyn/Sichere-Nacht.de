@@ -51,3 +51,13 @@
 - Vercel-Domain `sichere-nacht.de` / `www.sichere-nacht.de` wurde als DNS-konform verifiziert; das ist keine Abnahme des Live-Checkouts.
 - Bisherige Testbestellungen: 5 gespeichert, davon die neuesten zwei mit positivem Steuerbetrag; 5 Bestätigungs- und 2 Rechnungs-Mailjobs als `sent` registriert (Supabase). End-to-End mit dem finalen Release und einer kontrollierten Testzahlung erneut nachweisen.
 - Datenschutzdokument ergänzen: AV-Verträge, Drittlandtransfergrundlagen, genaue Aufbewahrungs- und Löschfristen, tatsächliche Konfiguration von Vercel/Stripe/Supabase/Resend, Empfehlungszuordnung und Cookies; erst danach Entwurfsmarkierungen entfernen.
+
+## Prüfergebnisse 13.11.2026 (GitHub CI)
+- **GitHub-Merge-Konflikt behoben:** `main` ist jetzt ein Vorfahr des Release-Zweigs; neuer Merge-Commit `595a88e3c6b9` mit beiden Eltern. Altes Logo-Asset erhalten, neues Markendesign bleibt maßgeblich.
+- **Go-live-CI:** Workflow `Sichere Nacht – Go-live-Prüfung` läuft mit Next.js Build und statischen Sicherheitsprüfungen. Nach Korrektur der Nullpreisartikel wurde der Workflow auf Commit `a11946e49f04` erfolgreich abgeschlossen.
+- **Produktkatalog:** 902 Katalogzeilen, davon **12 nicht verkaufsfähige Nullpreis-Einträge** (Marketingmaterial/Präsentationskoffer). Diese werden im öffentlichen Shop und Detailseiten nicht mehr als kaufbar angeboten, bleiben aber im internen JSON. Regulär bepreist sind 890 Artikel. Das ist **kein** Nachweis, dass alle 890 tatsächlich lagernd oder GPSR-vollständig sind.
+- **Vercel-Staging:** Branch `release/sichere-nacht-go-live` erhält eigene Checkout-Testflags, Supabase-Projektadresse und stabile Branch-Preview-Adresse. **Keine Production-Livekeys gesetzt.**
+- **Supabase-Mails:** 5 Bestätigungsjobs und 2 Rechnungsjobs mit Status `sent`. Es fehlen noch E2E-Zustellnachweise für den Release-Zweig sowie die korrekte Production-Absenderdomain.
+
+### Freigabevermerk
+Nicht freigegeben, solange Produkt-/Lagerprüfung und gesetzliche Informationen nicht vollständig, die Produktionsanbindung/Stripe-Liveschlüssel nicht eingerichtet, Mailversand inkl. Widerrufseingang nicht getestet und der finale Bestellbutton nicht visuell geprüft sind. Der CI-Build ist ein notwendiger, aber kein hinreichender Verkaufsstart-Nachweis.
