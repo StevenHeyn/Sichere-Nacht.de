@@ -1,25 +1,12 @@
 import Link from 'next/link';
-export const metadata={title:'Widerrufsbelehrung | Sichere Nacht'};
+import {CONSUMER_WITHDRAWAL_TEXT} from '../../lib/buyer-correspondence';
+import {B2B_WITHDRAWAL_NOTE,BUYER_PURPOSE_NOTE} from '../../lib/buyer-policy';
+export const metadata={title:'Widerrufsbelehrung für Verbraucher | Sichere Nacht'};
 export default function Widerruf(){return <main className="wrap" style={{maxWidth:850,paddingBottom:80}}>
- <Link href="/" className="accent">← Startseite</Link><h1>Widerrufsbelehrung für Waren</h1>
- <p className="note">Freigabeentwurf für den Warenversand. Die rechtliche Endprüfung bleibt erforderlich. Montageleistungen werden gesondert vereinbart.</p>
- <h2>Dein Ansprechpartner auch beim Direktversand</h2>
- <p>Die Waren werden direkt durch SECPLAN versendet. Verkäufer und Ansprechpartner für deinen Widerruf bleibt H &amp; K Projekt UG. Die unten genannte Rücksendeadresse bleibt unverändert; eine automatische Umleitung zu SECPLAN erfolgt nicht. Eine vorherige Genehmigung oder SECPLAN-RMA-Nummer ist für die Ausübung deines Widerrufs nicht erforderlich.</p>
- <h2>Widerrufsrecht</h2>
- <p>Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen.</p>
- <p>Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag, an dem Sie oder ein von Ihnen benannter Dritter, der nicht der Beförderer ist, die Waren in Besitz genommen haben bzw. hat. Bei mehreren getrennt gelieferten Waren beginnt die Frist mit Erhalt der letzten Ware.</p>
- <p>Um Ihr Widerrufsrecht auszuüben, müssen Sie uns (H &amp; K Projekt UG (haftungsbeschränkt), Lehmkoppel 7, 25499 Tangstedt, Deutschland, E-Mail: <a href="mailto:bestellungen@sichere-nacht.de">bestellungen@sichere-nacht.de</a>) mittels einer eindeutigen Erklärung (z. B. Brief oder E-Mail) über Ihren Entschluss informieren. Sie können das unten stehende Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist.</p>
- <p>Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie Ihre Mitteilung über die Ausübung des Widerrufsrechts vor Ablauf der Widerrufsfrist absenden.</p>
- <h2>Folgen des Widerrufs</h2>
- <p>Wenn Sie diesen Vertrag widerrufen, zahlen wir Ihnen alle Zahlungen, die wir von Ihnen erhalten haben, einschließlich der Lieferkosten (mit Ausnahme der zusätzlichen Kosten für eine von Ihnen gewählte andere als die von uns angebotene günstigste Standardlieferung), unverzüglich und spätestens binnen vierzehn Tagen ab dem Tag zurück, an dem Ihre Mitteilung über den Widerruf bei uns eingegangen ist.</p>
- <p>Für die Rückzahlung verwenden wir dasselbe Zahlungsmittel wie bei der ursprünglichen Transaktion, sofern nicht ausdrücklich etwas anderes vereinbart wurde. Ihnen werden wegen dieser Rückzahlung keine Entgelte berechnet.</p>
- <p>Wir können die Rückzahlung verweigern, bis wir die Waren zurückerhalten haben oder bis Sie nachgewiesen haben, dass Sie die Waren zurückgesandt haben, je nachdem, welcher Zeitpunkt früher liegt.</p>
- <p>Sie haben die Waren unverzüglich und jedenfalls spätestens binnen vierzehn Tagen ab dem Tag, an dem Sie uns über den Widerruf unterrichten, an H &amp; K Projekt UG (haftungsbeschränkt), Lehmkoppel 7, 25499 Tangstedt, Deutschland, zurückzusenden oder zu übergeben. Die Frist ist gewahrt, wenn Sie die Waren vor Ablauf der Frist von vierzehn Tagen absenden.</p>
- <p>Sie tragen die unmittelbaren Kosten der Rücksendung der Waren.</p>
- <p>Für einen etwaigen Wertverlust müssen Sie nur aufkommen, wenn dieser auf einen zur Prüfung der Beschaffenheit, Eigenschaften und Funktionsweise nicht notwendigen Umgang zurückzuführen ist.</p>
- <p>Eine vorherige Kontaktaufnahme kann die Zuordnung erleichtern, ist aber keine Voraussetzung für die fristgerechte Rücksendung an diese Adresse. Eine andere Rücksendeadresse gilt nur, wenn sie mit uns gesondert vereinbart wurde; die Lieferantenabwicklung setzt Ihre gesetzlichen Fristen nicht aus.</p>
- <h2>Muster-Widerrufsformular</h2><p>Wenn Sie den Vertrag widerrufen wollen, füllen Sie bitte dieses Formular aus und senden Sie es zurück:</p>
- <section className="card"><p>An: H &amp; K Projekt UG (haftungsbeschränkt), Lehmkoppel 7, 25499 Tangstedt, E-Mail: bestellungen@sichere-nacht.de</p>
- <p>Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen Vertrag über den Kauf der folgenden Waren:</p><p>Waren: _________________________________</p><p>Bestellt am (*) / erhalten am (*): __________________</p><p>Name des/der Verbraucher(s): ____________________</p><p>Anschrift des/der Verbraucher(s): _________________</p><p>Unterschrift (nur bei Mitteilung auf Papier): __________</p><p>Datum: __________________</p><p>(*) Unzutreffendes streichen.</p></section>
- <h2>Widerruf online erklären</h2><p>Deinen Widerruf kannst du auch direkt online erklären. Du überprüfst deine Angaben und bestätigst sie anschließend gesondert.</p><Link className="button" href="/widerruf-online">Vertrag widerrufen</Link><p><Link href="/kontakt">Kontakt aufnehmen</Link></p>
+ <Link href="/" className="accent">← Startseite</Link><h1>Widerrufsbelehrung für Verbraucher</h1>
+ <p>Die nachstehende Belehrung gilt für Warenkäufe als Verbraucher (§ 13 BGB), nicht für echte Unternehmenskäufe (§ 14 BGB).</p><section className="card"><h2>Geschäftliche Käufe (B2B)</h2><p>{B2B_WITHDRAWAL_NOTE}</p><p>{BUYER_PURPOSE_NOTE}</p></section>
+ <p>Die Ware wird durch SECPLAN versendet. Verkäufer und Ansprechpartner bleibt H &amp; K Projekt UG. Die Rücksendeadresse für Verbraucher bleibt Lehmkoppel 7, 25499 Tangstedt. Eine vorherige Genehmigung oder SECPLAN-RMA-Nummer ist für den Verbraucherwiderruf nicht erforderlich.</p>
+ <div style={{whiteSpace:'pre-line',lineHeight:1.8,marginTop:28}}>{CONSUMER_WITHDRAWAL_TEXT}</div>
+ <h2>Widerruf online erklären</h2><p>Für Verbraucher bleibt die Erklärung ohne Anmeldung erreichbar. Eine Eingangsbestätigung bestätigt die Übermittlung, sie begründet kein zusätzliches Widerrufsrecht für Unternehmenskäufe.</p><Link className="button" href="/widerruf-online">Vertrag widerrufen</Link><p><Link href="/kontakt">Kontakt aufnehmen</Link></p>
+ {process.env.SITE_LIVE_APPROVED!=='true'&&<p className="note">Die übrige rechtliche und technische Shop-Endabnahme bleibt offen.</p>}
  </main>}

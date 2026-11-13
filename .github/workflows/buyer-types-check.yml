@@ -1,0 +1,43 @@
+name: B2C B2B purchase purpose safeguards
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'lib/**'
+      - 'database/buyer_type.sql'
+      - 'scripts/buyer-types-test.mjs'
+      - '.github/workflows/buyer-types-check.yml'
+permissions:
+  contents: read
+concurrency:
+  group: buyer-types-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund --no-package-lock
+      - name: Buyer purpose, metadata, correspondence and document regression tests
+        run: node --test scripts/buyer-types-test.mjs
+      - name: Existing release guards
+        run: node scripts/go-live-audit.mjs
+      - name: Next.js build
+        run: npm run build
+      - name: Render fixture PDFs for visual review
+        run: |
+          if ! command -v pdftoppm >/dev/null; then sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils; fi
+          for f in buyer-qa/*.pdf; do pdftoppm -scale-to 1400 -png "$f" "${f%.pdf}"; done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: buyer-type-documents-qa
+          path: buyer-qa/
+          retention-days: 5
