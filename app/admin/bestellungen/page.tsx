@@ -1,6 +1,7 @@
 'use client';
 import {useState} from 'react';
 import Link from 'next/link';
+import CheckoutWriteProbe from './checkout-write-probe';
 type Order={stripe_session_id:string;status:string;amount_total:number;currency:string;customer_email:string|null;customer_name:string|null;shipping_country:string|null;shipping_address:Record<string,string|null>|null;vp_id:string|null;test_mode:boolean;items:Array<{name:string;sku:string|null;quantity:number}>;created_at:string;fulfillment_status:string;shipped_at:string|null;invoice_number:string|null};
 export default function Bestellungen(){
  const [token,setToken]=useState('');
@@ -47,7 +48,7 @@ export default function Bestellungen(){
   <p>Bestellbestätigungen werden nach bestätigter Zahlung vorgemerkt. Rechnungen werden erst nach der Versandmarkierung ausgelöst. Fehlende Steuerdaten blockieren die Rechnung.</p>
   <section className="card" style={{maxWidth:550}}>
    <label htmlFor="admin-token">Admin-Zugriffsschlüssel</label>
-   <input id="admin-token" type="password" autoComplete="off" value={token} onChange={e=>setToken(e.target.value)} placeholder="Admin-Schlüssel"/>
+   <input id="admin-token" type="password" autoComplete="off" value={token} onChange={e=>setToken(e.target.value)}/>
    <div className="row"><button className="button" type="button" disabled={!token||busy} onClick={load}>{busy?'Bitte warten …':'Bestellungen laden'}</button><button className="button secondary" type="button" disabled={!token||busy} onClick={loadHealth}>Systemcheck</button><button className="button secondary" type="button" onClick={()=>{setToken('');setOrders([]);setHealth(null)}}>Sitzung beenden</button></div>
    {message&&<p role="status">{message}</p>}
   </section>
@@ -61,6 +62,7 @@ export default function Bestellungen(){
     <p><strong>Echte Zahlungen:</strong> {health.gates.liveCheckout?'FREIGEGEBEN':'Gesperrt'} · <strong>Indexierung:</strong> {health.gates.siteIndexed?'Aktiv':'Deaktiviert'}</p>
     <p className="note">{health.note}</p>
    </section>}
+  {token&&<CheckoutWriteProbe adminToken={token}/>}
   {orders.length>0?<section style={{marginTop:24}}>
    <p>{orders.length} Bestellungen (neueste zuerst, maximal 100)</p>
    {orders.map(o=><article className="card" key={o.stripe_session_id} style={{marginBottom:14}}>
