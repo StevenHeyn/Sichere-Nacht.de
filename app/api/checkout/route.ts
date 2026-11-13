@@ -8,7 +8,7 @@ const intIn=(v:unknown,min:number,max:number)=>typeof v==='number'&&Number.isInt
 export async function POST(request:Request){
  const secret=process.env.STRIPE_SECRET_KEY;
  const isStripeTest=Boolean(secret?.startsWith('sk_test_'));
- const isStripeLive=Boolean(secret?.startsWith('sk_live_'));
+ const isStripeLive=Boolean(secret?.startsWith('sk_live_')||secret?.startsWith('rk_live_'));
  const enabled=process.env.CHECKOUT_ENABLED==='true'&&(
   (isStripeTest&&process.env.VERCEL_ENV==='preview'&&process.env.CHECKOUT_TEST_ENABLED==='true')||
   (isStripeLive&&process.env.VERCEL_ENV==='production'&&process.env.PAYMENTS_LIVE_APPROVED==='true')
