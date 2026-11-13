@@ -1,0 +1,47 @@
+import assert from 'node:assert/strict';
+import {test,after} from 'node:test';
+import {readFileSync,writeFileSync,mkdirSync,rmSync} from 'node:fs';
+import path from 'node:path';
+import {createRequire} from 'node:module';
+import ts from 'typescript';
+const root=process.cwd(),dir=path.join(root,'.buyer-type-qa-'+process.pid);
+mkdirSync(dir,{recursive:true});
+for(const name of ['buyer-policy','buyer-correspondence','invoice-pdf']){
+ const src=readFileSync(path.join(root,'lib',name+'.ts'),'utf8');
+ writeFileSync(path.join(dir,name+'.js'),ts.transpileModule(src,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText);
+}
+const require=createRequire(path.join(dir,'entry.cjs'));
+const p=require('./buyer-policy.js'),c=require('./buyer-correspondence.js'),pdf=require('./invoice-pdf.js');
+after(()=>rmSync(dir,{recursive:true,force:true}));
+const now=new Date('2026-11-13T12:00:00.000Z');
+const b2b=()=>p.validateBuyerInput({customerType:'b2b',company:'Beispiel & Partner GmbH',businessPurchaseDeclared:true},now);
+const b2c=()=>p.validateBuyerInput({customerType:'b2c'},now);
+const metadata=row=>Object.fromEntries(Object.entries(row).map(([k,v])=>[k,v===null?'':String(v)]));
+const file=name=>readFileSync(path.join(root,name),'utf8');
+test('missing, unknown or array buyer choice is rejected server-side',()=>{for(const x of [null,{},[],{customerType:'company'},{customerType:true}])assert.throws(()=>p.validateBuyerInput(x,now),/auswählen/)});
+test('B2C strips injected company and business flags',()=>{const r=p.validateBuyerInput({customerType:'b2c',company:'Private GmbH',businessPurchaseDeclared:true,buyer_policy_version:'fake'},now);assert.equal(r.customer_type,'b2c');assert.equal(r.buyer_company,null);assert.equal(r.business_purchase_declared,false);assert.equal(r.buyer_policy_version,p.BUYER_POLICY_VERSION)});
+test('B2B requires a true boolean declaration, not merely a company',()=>{for(const flag of [undefined,false,'true',1])assert.throws(()=>p.validateBuyerInput({customerType:'b2b',company:'Beispiel GmbH',businessPurchaseDeclared:flag},now),/bestätigen/)});
+test('business names cannot be missing, oversize or control-character/HTML injections',()=>{for(const name of ['',null,'A','x'.repeat(161),'A\nB','<script>Bad</script>'])assert.throws(()=>p.validateBuyerInput({customerType:'b2b',company:name,businessPurchaseDeclared:true},now),/Unternehmensnamen/)});
+test('version and timestamp are generated server-side; no tax ID is mandatory',()=>{const r=b2b();assert.equal(r.buyer_declared_at,now.toISOString());assert.equal(r.buyer_policy_version,'2026-11-13-v1');assert.equal(r.buyer_company,'Beispiel & Partner GmbH')});
+test('new B2B and B2C Stripe metadata roundtrip completely',()=>{for(const row of [b2b(),b2c()])assert.deepEqual(p.buyerFromStripeMetadata(metadata(row)),row)});
+test('missing metadata never silently means business purchase',()=>{for(const m of [null,{}, {customer_type:'b2b',buyer_company:'Firma'}])assert.equal(p.buyerFromStripeMetadata(m).customer_type,'unclassified')});
+test('incomplete B2B metadata is flagged rather than losing the paid order',()=>{for(const key of ['buyer_company','business_purchase_declared','buyer_policy_version','buyer_declared_at']){const m=metadata(b2b());delete m[key];assert.equal(p.buyerFromStripeMetadata(m).customer_type,'unclassified')}});
+test('unsupported policy and invalid time do not validate B2B',()=>{assert.equal(p.buyerFromStripeMetadata({...metadata(b2b()),buyer_policy_version:'future'}).customer_type,'unclassified');assert.equal(p.buyerFromStripeMetadata({...metadata(b2b()),buyer_declared_at:'yesterday'}).customer_type,'unclassified')});
+test('Postgres timestamptz JSON representation is recognized',()=>{assert.equal(p.documentedBuyerType({...b2b(),buyer_declared_at:'2026-11-13T12:00:00+00:00'}),'b2b');assert.equal(p.documentedBuyerType({...b2b(),buyer_declared_at:'2026-11-13T12:00:00.123456+00:00'}),'b2b')});
+test('Stripe receives scoped notices without tax exemption parameters',()=>{for(const row of [b2b(),b2c()]){const f=new URLSearchParams();p.applyBuyerMetadata(f,row);assert.equal(f.get('metadata[customer_type]'),row.customer_type);assert.ok(f.has('custom_text[submit][message]'));assert.ok(!f.has('customer[tax_exempt]'))}assert.throws(()=>p.applyBuyerMetadata(new URLSearchParams(),p.unknownBuyer()))});
+test('B2B correspondence has no consumer withdrawal notice or model form',()=>{const out=c.buyerCorrespondence(b2b());assert.match(out.notice,/kein freiwilliges Widerrufsrecht/);assert.match(out.notice,/Mängelrechte bleiben unberührt/);assert.equal(out.attachment.filename,'Unternehmenskauf-Sichere-Nacht.txt');assert.doesNotMatch(out.attachment.text,/Muster-Widerrufsformular|vierzehn Tagen|Sie haben das Recht/)});
+test('B2C receives complete durable notice and form',()=>{const out=c.buyerCorrespondence(b2c());assert.equal(out.attachment.filename,'Widerrufsbelehrung-Sichere-Nacht.txt');for(const phrase of ['vierzehn Tagen','Muster-Widerrufsformular','Lehmkoppel 7','Widerruf bestätigen','bestellungen@sichere-nacht.de'])assert.ok(out.attachment.text.includes(phrase))});
+test('legacy orders are neither automatically B2B nor sent a B2B exclusion',()=>{const out=c.buyerCorrespondence({});assert.equal(out.attachment,null);assert.doesNotMatch(out.notice,/kein gesetzliches|kein freiwilliges/)});
+test('billing document uses company only for evidenced B2B; shipping name untouched',()=>{assert.equal(p.documentBuyerName({...b2b(),customer_name:'Kontaktperson',shipping_name:'Anderer Empfänger'}),'Beispiel & Partner GmbH');assert.equal(p.documentBuyerName({...b2c(),customer_name:'Privatperson'}),'Privatperson');assert.equal(p.documentBuyerName({customer_type:'b2b',buyer_company:'Unbewiesen',customer_name:'Privatperson'}),'Privatperson')});
+const issuer={name:'H & K Projekt UG (haftungsbeschränkt)',street:'Lehmkoppel 7',postalCity:'25499 Tangstedt',vatId:'TEST-NICHT-GUELTIG',registry:'Testdokument',email:'test@example.invalid'};
+const snapshot={stripe_session_id:'cs_test_BuyerTypesOnly0123456789',created_at:now.toISOString(),customer_name:'Beispiel & Partner GmbH',customer_email:'test@example.invalid',billing_address:{line1:'Testweg 1',postal_code:'12345',city:'Teststadt',country:'DE'},shipping_address:null,amount_total:15980,amount_tax:2551,shipping_amount:990,currency:'eur',items:[{name:'Ajax MotionProtect Plus Testartikel',sku:'38198.02.WH1',quantity:1,amount_total:14990}],test_mode:true};
+test('B2B confirmation PDF explicitly avoids a voluntary withdrawal right',()=>{const bytes=pdf.confirmationPdf({...snapshot,customer_type:'b2b'},issuer);const text=bytes.toString('latin1');assert.match(text,/B2B \/ Unternehmenskauf/);assert.match(text,/kein freiwilliges Widerrufsrecht/);assert.doesNotMatch(text,/Musterformular|vierzehn Tagen/)});
+test('B2C confirmation refers to separately attached consumer documents',()=>{const text=pdf.confirmationPdf({...snapshot,customer_type:'b2c'},issuer).toString('latin1');assert.match(text,/B2C \/ Privatkauf/);assert.match(text,/Musterformular/);assert.doesNotMatch(text,/kein freiwilliges Widerrufsrecht/)});
+test('invoice still requires tax and keeps business recipient',()=>{assert.throws(()=>pdf.invoicePdf({...snapshot,invoice_number:'TEST',issued_at:now.toISOString(),shipped_at:now.toISOString(),amount_tax:0,customer_type:'b2b'},issuer));const bytes=pdf.invoicePdf({...snapshot,invoice_number:'TEST-ONLY-001',issued_at:now.toISOString(),shipped_at:now.toISOString(),customer_type:'b2b'},issuer);assert.match(bytes.toString('latin1'),/Beispiel & Partner GmbH/)});
+test('checkout and webhook wire the validated declaration, not company inference',()=>{assert.match(file('app/api/checkout/route.ts'),/validateBuyerInput\(body.buyer\)/);assert.match(file('app/api/checkout/route.ts'),/applyBuyerMetadata/);assert.match(file('app/api/stripe/webhook/route.ts'),/buyerFromStripeMetadata\(session.metadata\)/);assert.match(file('app/warenkorb/page.tsx'),/BuyerSelector/);assert.match(file('app/admin/bestellungen/page.tsx'),/buyerFilter/)});
+test('consumer withdrawal entry stays open and its API does not deny by B2B label',()=>{assert.match(file('app/layout.tsx'),/widerruf-online/);assert.doesNotMatch(file('app/api/widerruf/route.ts'),/customer_type|ORDERS_ADMIN_TOKEN/);assert.match(file('app/widerruf-online/page.tsx'),/dennoch übermitteln/)});
+test('schema does not retroactively classify, and freezes written evidence and invoice identity',()=>{const sql=file('database/buyer_type.sql');assert.match(sql,/default 'unclassified'/);assert.match(sql,/buyer_policy_version is not null/);assert.match(sql,/preserve_order_buyer_declaration/);assert.match(sql,/'buyer_company',o.buyer_company/);assert.doesNotMatch(sql,/update public.orders set customer_type='b2b'/)});
+// Only non-personal fixtures for visual PDF review, not invoices or emails.
+mkdirSync(path.join(root,'buyer-qa'),{recursive:true});
+for(const type of ['b2c','b2b'])writeFileSync(path.join(root,'buyer-qa',type+'.pdf'),pdf.confirmationPdf({...snapshot,customer_name:type==='b2b'?'Beispiel & Partner GmbH':'Privatperson Beispiel',customer_type:type},issuer));
+writeFileSync(path.join(root,'buyer-qa','b2b-long.pdf'),pdf.confirmationPdf({...snapshot,customer_name:'Beispielgesellschaft für Sicherheits- und Gebäudetechnik Norddeutschland mit beschränkter Haftung und Partner Servicegesellschaft',customer_type:'b2b'},issuer));
