@@ -2,6 +2,7 @@ import {createHash, timingSafeEqual} from 'node:crypto';
 import {NextResponse} from 'next/server';
 import products from '../../../../products.json';
 import {runCheckoutWriteProbe} from '../../../../lib/checkout-write-probe';
+import {applyCheckoutBranding} from '../../../../lib/stripe-shop';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -62,6 +63,7 @@ export async function POST(request: Request) {
     'metadata[diagnostic]':'checkout-write-probe-v1',
     'metadata[shipping_country]':'DE'
   });
+  applyCheckoutBranding(form);
   const digest = createHash('sha256').update(form.toString()).digest('hex');
   const result = await runCheckoutWriteProbe({key, parameters:form,
     idempotencyKey:'sn-checkout-probe-v1-' + digest, expectedSku:sku});
