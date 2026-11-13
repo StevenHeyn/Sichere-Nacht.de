@@ -1,0 +1,31 @@
+name: Checkout probe safety tests
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - 'lib/checkout-write-probe.ts'
+      - 'app/api/admin/checkout-probe/**'
+      - 'app/admin/bestellungen/**'
+      - 'scripts/checkout-probe-test.mjs'
+      - '.github/workflows/checkout-probe-check.yml'
+permissions:
+  contents: read
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Isolated tests with mocked Stripe responses (no API keys)
+        run: node --experimental-strip-types --test scripts/checkout-probe-test.mjs
+      - name: Install build dependencies
+        run: npm install --no-audit --no-fund --no-package-lock
+      - name: Static launch safeguards
+        run: node scripts/go-live-audit.mjs
+      - name: Next.js production build
+        run: npm run build
