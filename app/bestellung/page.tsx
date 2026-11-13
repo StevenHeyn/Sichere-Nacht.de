@@ -8,7 +8,7 @@ async function getVerifiedPaymentStatus(sessionId:string):Promise<'paid'|'pendin
  const testMode=process.env.VERCEL_ENV==='preview'&&Boolean(secret?.startsWith('sk_test_'));
  const liveMode=process.env.VERCEL_ENV==='production'&&process.env.PAYMENTS_LIVE_APPROVED==='true'&&Boolean(secret?.startsWith('sk_live_')||secret?.startsWith('rk_live_'));
  if(!testMode&&!liveMode)return 'unavailable';
- if(!new RegExp('^cs_'+(liveMode?'live':'test')+'_[a-zA-Z0-9]{12,}
+ if(!sessionId.startsWith(liveMode?'cs_live_':'cs_test_')||!/^cs_(?:live|test)_[A-Za-z0-9]{12,}$/.test(sessionId))return 'unavailable';
  try{
   const response=await fetch('https://api.stripe.com/v1/checkout/sessions/'+encodeURIComponent(sessionId),{
    headers:{Authorization:'Bearer '+secret,'Stripe-Version':'2026-03-25.dahlia'},
