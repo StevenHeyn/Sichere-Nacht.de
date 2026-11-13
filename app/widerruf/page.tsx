@@ -29,6 +29,6 @@ export default function Widerruf(){return <main className="wrap" style={{maxWidt
  <p>Datum: __________________</p><p>(*) Unzutreffendes streichen.</p>
  </section>
  <h2>Widerruf online erklären</h2>
- <p>Der gesetzlich vorgesehene zweistufige elektronische Widerruf mit unverzüglicher Eingangsbestätigung wird vor Freischaltung des Shops an dieser Stelle verlinkt. Bis dahin ist die Erklärung per E-Mail oder Post möglich.</p>
+ <p>Du kannst deinen Widerruf auch direkt online erklären. Dafür stehen dir eine Überprüfung deiner Angaben und eine gesonderte Bestätigung zur Verfügung.</p><Link className="button" href="/widerruf-online">Vertrag widerrufen</Link>
  <Link href="/kontakt">Kontakt aufnehmen</Link>
  </main>}
