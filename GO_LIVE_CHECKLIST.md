@@ -32,3 +32,22 @@
 - Deutsche Steuer- und Rechnungsbehandlung sowie Startumfang DE / AT bestätigen.
 - Impressumsdaten H & K Projekt UG (haftungsbeschränkt), HRB, USt-ID und E-Mail auf Handelsregister/Finanzamt und tatsächliche Erreichbarkeit abgleichen.
 - Datenschutz und Verbraucherrechtstexte fachlich freigeben.
+
+## Rechtsprüfung vom 13.11.2026 – verifizierte Quellen und konkrete Restarbeiten
+
+### Gesetzliche Pflichtinformationen und Gestaltung
+- **§ 312j BGB:** Lieferbeschränkungen und Zahlungsmittel rechtzeitig; unmittelbar vor dem endgültigen Klick wesentliche Warenmerkmale, Gesamtpreis, Versandkosten, Vertragsdaten; der abschließende Button muss die Zahlungspflicht eindeutig ausdrücken. Der eingebettete Stripe-Button muss optisch/inhaltlich in einer echten Preview-Abnahme kontrolliert werden. https://www.gesetze-im-internet.de/bgb/__312j.html
+- **§ 356a BGB:** Hervorgehobene elektronische Widerrufsfunktion, eindeutiger zweiter Button „Widerruf bestätigen“, unverzügliche Eingangsbestätigung auf dauerhaftem Datenträger mit übermittelten Angaben plus Zeitpunkt. Der Code hat zwei Schritte, aber Zustellbestätigung, Ausfallszenario und Schutz vor Missbrauch brauchen Ende-zu-Ende-Tests. https://www.gesetze-im-internet.de/bgb/__356a.html
+- **AGB nicht gesetzlich zwingend:** Der vorhandene Entwurf ist freiwillig. Pflicht sind aber zutreffende Verbraucherinformationen. Die Vertragsannahme gemäß AGB muss zur tatsächlich verwendeten E-Mail „Bestellbestätigung“ passen. https://www.cec-zev.eu/de/themen/einkaufen/e-commerce/internetauftritt/informationspflichten/
+
+### Produktsicherheit und Warenversand
+- **Art. 19 EU-Produktsicherheitsverordnung (EU) 2023/988 (GPSR):** Bei Onlineangeboten Herstellername und postalische/elektronische Kontaktadresse, nötigenfalls verantwortliche EU-Person mit Adresse, Produktidentifikation und verpflichtende Warnhinweise in verständlicher Sprache angeben. Im `products.json` stehen zwar SKU, EAN, Beschreibung und teils Bild, aber keine verifizierten Hersteller-/Verantwortlichen-Kontakte pro Artikel. **BLOCKER für einen uneingeschränkten Katalogverkauf:** Daten mit SEC Plan/Ajax verifizieren; ggf. pro Produktlinie auf Produktebene hinterlegen. Keine Kontaktdaten erfinden. https://eur-lex.europa.eu/eli/reg/2023/988
+- **Verpackungsrecht:** Bestätigen, dass H & K Projekt UG als Versandverpackungs-Erstinverkehrbringer, soweit einschlägig, in LUCID registriert ist, ein Systembeteiligungsvertrag besteht und Mengenmeldungen erfolgen. https://www.verpackungsregister.org/themen/versand-und-onlinehandel
+- **ElektroG und Batteriepflichten:** WEEE-Registrierung der Hersteller/Importeure bzw. relevante Händler- und Rücknahmepflichten prüfen; ebenso Batterie-Informationen bei Geräten mit Batterien. https://www.stiftung-ear.de/anleitungen/weee-registrierung-beantragen/
+- **Verfügbarkeit:** Die Zusage „2–4 Werktage“ darf nur für tatsächlich vorrätige Artikel gelten; ohne Warenbestandsschnittstelle einzelne nicht sofort lieferbare Produkte kennzeichnen oder aus dem Verkauf nehmen.
+
+### Technische und datenschutzrechtliche Abnahme
+- In Production noch keine Stripe-Keys, Supabase-URLs, Live-Webhook-Signatur und Mail-/Invoice-Konfiguration (Stand 13.11.). Produktionsschlüssel nicht aus Preview übernehmen, sondern separat auf Live- und Testmodus abgleichen.
+- Vercel-Domain `sichere-nacht.de` / `www.sichere-nacht.de` wurde als DNS-konform verifiziert; das ist keine Abnahme des Live-Checkouts.
+- Bisherige Testbestellungen: 5 gespeichert, davon die neuesten zwei mit positivem Steuerbetrag; 5 Bestätigungs- und 2 Rechnungs-Mailjobs als `sent` registriert (Supabase). End-to-End mit dem finalen Release und einer kontrollierten Testzahlung erneut nachweisen.
+- Datenschutzdokument ergänzen: AV-Verträge, Drittlandtransfergrundlagen, genaue Aufbewahrungs- und Löschfristen, tatsächliche Konfiguration von Vercel/Stripe/Supabase/Resend, Empfehlungszuordnung und Cookies; erst danach Entwurfsmarkierungen entfernen.
