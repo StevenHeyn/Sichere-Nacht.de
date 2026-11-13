@@ -51,7 +51,7 @@ export default function CartPage(){
  const [checkoutSecret,setCheckoutSecret]=useState('');
  useEffect(()=>{setCart(loadCart())},[]);
  const lines=useMemo(()=>cart?.items.map(line=>({...line,product:products.get(line.sku)}))||[],[cart]);
- const invalid=lines.filter(l=>!l.product);
+ const invalid=lines.filter(l=>!l.product||!Number.isInteger(l.product.priceCents)||l.product.priceCents<=0);
  const subtotal=lines.reduce((sum,l)=>sum+(l.product?.priceCents||0)*l.quantity,0);
  const montage=cart?.installation?19900:0;
  const shipping=lines.length>0?990:0;
