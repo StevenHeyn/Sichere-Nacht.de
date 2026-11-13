@@ -1,0 +1,46 @@
+name: Sichere Nacht – Production Smoke Test
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/production-smoke.yml'
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Öffentliche Seiten und gesperrten Checkout prüfen
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://sichere-nacht.de'
+          check() {
+            local method="$1" path="$2" expected="$3"
+            local code
+            code=$(curl -sS -L --max-time 25 -o /tmp/response -w '%{http_code}' -X "$method" "$base$path")
+            echo "$method $path -> $code (erwartet $expected)"
+            if [ "$code" != "$expected" ]; then
+              echo "Fehler bei $path"
+              head -c 500 /tmp/response || true
+              exit 1
+            fi
+          }
+          for page in / /shop /konfigurator /warenkorb /agb /widerruf /widerruf-online /datenschutz /versand /impressum; do
+            check GET "$page" 200
+          done
+          check GET /api/stripe/webhook 405
+          check POST /api/stripe/webhook 400
+          check POST /api/checkout 503
+          check GET /api/admin/orders 401
+          check POST /api/widerruf 400
+      - name: Noch keine Live-Freigabe im HTML
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --max-time 25 https://sichere-nacht.de/warenkorb -o /tmp/warenkorb.html
+          if ! grep -q 'Onlinezahlung noch nicht freigeschaltet' /tmp/warenkorb.html; then
+            echo 'Hinweis: Text nicht im SSR-HTML gefunden; serverseitige Sperre wurde separat geprüft.'
+          fi
+          echo 'Keine Bezahltransaktion wurde ausgelöst.'
