@@ -11,8 +11,8 @@ export default function Versand(){return <main className="wrap" style={{maxWidth
  <h2>Versandkosten</h2>
  <p>Pro Bestellung berechnen wir deutschlandweit eine Versandpauschale von <strong>9,90 € inklusive gesetzlicher Umsatzsteuer</strong>, unabhängig von der Zahl der bestellten Artikel. Der vollständige Gesamtbetrag wird im Warenkorb vor Abschluss der Bestellung angezeigt.</p>
  <h2>Bezahlung</h2>
- <p>Die Bezahlung erfolgt über den Zahlungsdienstleister Stripe. Die konkret verfügbaren Zahlungsarten werden im Bestellprozess angezeigt. Der Shop nimmt in dieser Vorschau ausschließlich Testzahlungen an; echte Zahlungen werden erst nach der technischen und rechtlichen Freigabe aktiviert.</p>
+ <p>Die Bezahlung erfolgt über den Zahlungsdienstleister Stripe. Die konkret verfügbaren Zahlungsarten werden im Bestellprozess angezeigt. Zahlungsdaten werden über Stripe verarbeitet.</p>
  <h2>Montageservice</h2>
  <p>Ein Montageservice im Raum Hamburg und Umgebung ist gesondert anfragbar. Die geplante Pauschale beträgt 199 € brutto, vorbehaltlich Prüfung des Einsatzortes und Leistungsumfangs. Eine verbindliche Montagebuchung kommt erst nach separater Bestätigung zustande.</p>
- <p className="note">Diese Seite befindet sich in der rechtlichen und kaufmännischen Endabnahme.</p>
+ {process.env.SITE_LIVE_APPROVED!=='true'&&<p className="note">Diese Seite befindet sich in der rechtlichen und kaufmännischen Endabnahme.</p>}
  </main>}
