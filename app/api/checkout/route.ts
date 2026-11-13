@@ -2,6 +2,7 @@ import {NextResponse} from 'next/server';
 import products from '../../../products.json';
 import {applyCheckoutBranding} from '../../../lib/stripe-shop';
 import {validateBuyerInput,applyBuyerMetadata} from '../../../lib/buyer-policy';
+import {logStripeFailure} from '../../../lib/stripe-diagnostics';
 export const runtime='nodejs';
 type OrderLine={sku:string;quantity:number};
 const priceBySku=new Map(products.map(p=>[p.sku,p]));
@@ -34,5 +35,5 @@ export async function POST(request:Request){
  const vp=typeof body.vpId==='string'?body.vpId.trim().toUpperCase():'';const registered=(process.env.VALID_PARTNER_IDS||'').split(',').map(x=>x.trim().toUpperCase()).filter(Boolean);
  if(/^VP-[A-Z0-9]{3,16}$/.test(vp)&&registered.includes(vp))form.set('metadata[vp_id]',vp);
  form.set('metadata[shop]','sichere-nacht');form.set('metadata[shipping_country]',country);form.set('metadata[attribution_status]',form.has('metadata[vp_id]')?'registered':'none');
- try{const response=await fetch('https://api.stripe.com/v1/checkout/sessions',{method:'POST',headers:{Authorization:'Bearer '+secret,'content-type':'application/x-www-form-urlencoded','Stripe-Version':'2026-03-25.dahlia'},body:form.toString(),cache:'no-store'});const data=await response.json();if(!response.ok||typeof data.client_secret!=='string')return error('Der Zahlungsdienst ist momentan nicht verfügbar.',502);return NextResponse.json({client_secret:data.client_secret})}catch{return error('Zahlung konnte nicht vorbereitet werden.',502)}
+ try{const response=await fetch('https://api.stripe.com/v1/checkout/sessions',{method:'POST',headers:{Authorization:'Bearer '+secret,'content-type':'application/x-www-form-urlencoded','Stripe-Version':'2026-03-25.dahlia'},body:form.toString(),cache:'no-store'});const data=await response.json();if(!response.ok||typeof data.client_secret!=='string'){logStripeFailure(response,data);return error('Der Zahlungsdienst ist momentan nicht verfügbar.',502)}return NextResponse.json({client_secret:data.client_secret})}catch{return error('Zahlung konnte nicht vorbereitet werden.',502)}
 }
