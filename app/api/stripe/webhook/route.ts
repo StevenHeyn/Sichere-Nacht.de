@@ -2,12 +2,13 @@ import {createHmac,timingSafeEqual} from 'node:crypto';
 import {NextResponse} from 'next/server';
 import {ordersConfigured,savePaidOrder,type StoredOrder} from '../../../../lib/orders';
 import {dispatchOrderMail} from '../../../../lib/order-notifications';
+import {isSichereNachtCheckout} from '../../../../lib/stripe-shop';
 
 export const runtime='nodejs';
 
 type StripeEvent={
  id?:string;type?:string;livemode?:boolean;
- data?:{object?:{id?:string;object?:string;mode?:string;payment_status?:string}}
+ data?:{object?:{id?:string;object?:string;mode?:string;payment_status?:string;metadata?:Record<string,string>}}
 };
 type StripeAddress=Record<string,unknown>;
 type StripeSession={
@@ -40,9 +41,11 @@ async function stripeGet<T>(endpoint:string):Promise<T>{
  if(!result.ok)throw new Error('Stripe API Status '+result.status);
  return result.json() as Promise<T>;
 }
-async function verifiedPaidOrder(event:StripeEvent,sessionId:string):Promise<StoredOrder|null>{
+async function verifiedPaidOrder(event:StripeEvent,sessionId:string):Promise<StoredOrder|null|'ignored'>{
  const session=await stripeGet<StripeSession>('checkout/sessions/'+encodeURIComponent(sessionId));
  if(session.id!==sessionId||session.object!=='checkout.session'||session.mode!=='payment')throw new Error('Stripe Session ungültig');
+ // Recheck the authoritative object; a valid Stripe signature alone does not identify this shop.
+ if(!isSichereNachtCheckout(session))return 'ignored';
  if(session.status!=='complete'||session.payment_status!=='paid')return null;
  const inPreview=process.env.VERCEL_ENV==='preview';
  const inProduction=process.env.VERCEL_ENV==='production';
@@ -93,12 +96,14 @@ export async function POST(request:Request){
  if(!validSignature(raw,signature,webhookSecret))return NextResponse.json({error:'Ungültige Signatur'},{status:400});
  let event:StripeEvent;
  try{event=JSON.parse(raw) as StripeEvent}catch{return NextResponse.json({error:'Ungültiges JSON'},{status:400})}
- if(!event.id||!event.type)return NextResponse.json({error:'Unvollständiges Event'},{status:400});
+ if(!event||typeof event.id!=='string'||!event.id||typeof event.type!=='string'||!event.type)return NextResponse.json({error:'Unvollständiges Event'},{status:400});
  if(event.type!=='checkout.session.completed'&&event.type!=='checkout.session.async_payment_succeeded'){
   return NextResponse.json({received:true,ignored:true});
  }
  const object=event.data?.object;
  if(object?.object!=='checkout.session'||!object.id)return NextResponse.json({error:'Ungültiges Session-Event'},{status:400});
+ // Ignore other shops and diagnostics before touching this shop's database or mail service.
+ if(!isSichereNachtCheckout(object))return NextResponse.json({received:true,ignored:true});
  if(!ordersConfigured()){
   // Stripe must retry: accepting with 200 would silently drop a paid order.
   console.error('Webhook empfangen, Bestelldatenbank fehlt',event.id);
@@ -106,6 +111,7 @@ export async function POST(request:Request){
  }
  try{
   const order=await verifiedPaidOrder(event,object.id);
+  if(order==='ignored')return NextResponse.json({received:true,ignored:true});
   if(!order)return NextResponse.json({received:true,payment_pending:true});
   await savePaidOrder(order);
   // Confirmations are queued durably in the DB and retried from admin when mail config/provider is unavailable.

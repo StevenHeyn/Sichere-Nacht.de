@@ -1,0 +1,32 @@
+name: Stripe shop isolation checks
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - 'lib/stripe-shop.ts'
+      - 'app/api/checkout/**'
+      - 'app/api/stripe/webhook/**'
+      - 'app/api/admin/checkout-probe/**'
+      - 'scripts/stripe-shop-test.mjs'
+      - '.github/workflows/stripe-shop-check.yml'
+permissions:
+  contents: read
+jobs:
+  isolation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Shop isolation and existing no-charge probe tests (no credentials)
+        run: node --experimental-strip-types --test scripts/stripe-shop-test.mjs scripts/checkout-probe-test.mjs
+      - name: Dependencies
+        run: npm install --no-audit --no-fund --no-package-lock
+      - name: Launch safeguards
+        run: node scripts/go-live-audit.mjs
+      - name: Build
+        run: npm run build

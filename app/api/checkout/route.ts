@@ -1,5 +1,6 @@
 import {NextResponse} from 'next/server';
 import products from '../../../products.json';
+import {applyCheckoutBranding} from '../../../lib/stripe-shop';
 export const runtime='nodejs';
 type OrderLine={sku:string;quantity:number};
 const priceBySku=new Map(products.map(p=>[p.sku,p]));
@@ -32,6 +33,7 @@ export async function POST(request:Request){
   if(cart.get(item.sku)!>30)return error('Maximale Stückzahl überschritten.',400);
  }
  const form=new URLSearchParams();
+ applyCheckoutBranding(form);
  form.set('mode','payment');
  form.set('ui_mode','form');
  form.set('return_url',origin+'/bestellung?session_id={CHECKOUT_SESSION_ID}');
