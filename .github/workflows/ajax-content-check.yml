@@ -1,0 +1,34 @@
+name: Ajax-Katalog Buildprüfung
+
+on:
+  pull_request:
+    branches:
+      - feature/combined-shop-preview
+      - feature/ajax-catalog-content-0226
+    paths:
+      - "app/**"
+      - "lib/**"
+      - "products.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/ajax-content-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Code laden
+        uses: actions/checkout@v4
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Abhängigkeiten installieren
+        run: npm install --no-audit --no-fund --no-package-lock
+      - name: Next.js Produktionsbuild prüfen
+        run: npm run build
