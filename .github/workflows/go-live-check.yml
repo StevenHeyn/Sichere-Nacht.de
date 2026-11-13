@@ -1,0 +1,29 @@
+name: Sichere Nacht – Go-live-Prüfung
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - 'release/sichere-nacht-go-live'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Statische Prüfung und Next.js Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Abhängigkeiten
+        run: npm install --no-audit --no-fund --no-package-lock
+      - name: Go-live-Gates prüfen (ohne Secrets)
+        run: node scripts/go-live-audit.mjs
+      - name: Next.js Produktionsbuild
+        run: npm run build
