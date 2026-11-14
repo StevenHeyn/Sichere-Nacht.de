@@ -1,0 +1,7 @@
+'use client';
+import {useEffect,useState} from 'react';
+import Link from 'next/link';
+import {usePathname} from 'next/navigation';
+import BrandLogo from './brand-logo';
+import {loadCart} from '../../lib/cart';
+export default function SiteHeader(){const [open,setOpen]=useState(false),[count,setCount]=useState(0);const path=usePathname();useEffect(()=>{setOpen(false)},[path]);useEffect(()=>{const update=()=>setCount(loadCart().items.reduce((n,l)=>n+l.quantity,0));update();window.addEventListener('sichere-nacht-cart-updated',update);window.addEventListener('storage',update);return()=>{window.removeEventListener('sichere-nacht-cart-updated',update);window.removeEventListener('storage',update)}},[]);return <header className="qualityHeader"><div className="wrap qualityNav"><BrandLogo compact/><button className="menuToggle" type="button" aria-expanded={open} aria-controls="primary-menu" onClick={()=>setOpen(!open)}>{open?'Menü schließen':'Menü öffnen'}</button><nav id="primary-menu" className={'qualityLinks '+(open?'isOpen':'')} aria-label="Hauptnavigation"><Link href="/shop">Shop</Link><Link href="/alarmanlagen/wohnung">Privat</Link><Link href="/alarmanlagen/gewerbe">Gewerbe</Link><Link href="/ratgeber">Ratgeber</Link><Link href="/kontakt">Kontakt</Link><Link href="/warenkorb" className="cartLink" aria-label={'Warenkorb mit '+count+' Artikeln'}>Warenkorb <span>{count}</span></Link><Link href="/konfigurator" className="button">Anlage planen</Link></nav></div></header>}
