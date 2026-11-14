@@ -1,6 +1,7 @@
 'use client';
 import {useState} from 'react';
 import {supplierStatusLabels} from '../../../lib/delivery-policy';
+import SupplierPortalLink from './supplier-portal-link';
 export type SupplierState={status:string;submission_reference:string|null;supplier_reference:string|null;stock_evidence:string|null;submitted_at:string|null;confirmed_at:string|null;dispatch_evidence:string|null;dispatched_at:string|null;carrier:string|null;tracking_number:string|null};
 type Order={stripe_session_id:string;test_mode:boolean;shipping_name?:string|null;supplier_fulfillments?:SupplierState|SupplierState[]|null};
 export default function SupplierPanel({order,token,onChanged}:{order:Order;token:string;onChanged:()=>Promise<void>}){
@@ -24,14 +25,14 @@ export default function SupplierPanel({order,token,onChanged}:{order:Order;token
   <h3>SECPLAN-Direktversand</h3>
   <p><strong>Status:</strong> {state?supplierStatusLabels[state.status]||state.status:'Lieferantenstatus noch nicht geladen'}</p>
   <p><strong>Lieferempfänger:</strong> {order.shipping_name||'Fehlt. Nicht mit Rechnungsempfänger gleichsetzen.'}</p>
-  <p className="note">Manuelle Abwicklung: Keine angebundene SECPLAN-API und kein automatischer Lieferantenversand. Bestandsabgleich und Auftragsübermittlung erfolgen über den vereinbarten SECPLAN-Kanal.</p>
+  <SupplierPortalLink testMode={order.test_mode}/>
   {order.test_mode&&<p className="note">TESTBESTELLUNG: Export als echter Lieferantenauftrag gesperrt.</p>}
   {!order.test_mode&&state?.status==='pending'&&<button type="button" className="button secondary" disabled={busy||!token} onClick={()=>act('draft')}>SECPLAN-Auftragsentwurf anzeigen</button>}
   {draft&&<div><p>Enthält nur Lieferempfänger, Lieferanschrift, Artikelnummern und Mengen. Keine Kundenzahlungsdaten oder Verkaufspreise.</p><textarea aria-label="Manueller SECPLAN-Auftragsentwurf" readOnly rows={16} value={draft}/></div>}
   {state?.submission_reference&&<p>Übermittlung: {state.submission_reference}</p>}
   {state?.supplier_reference&&<p>SECPLAN-Auftrag: {state.supplier_reference}</p>}
   {state&&['pending','submitted','confirmed'].includes(state.status)&&<div>
-   <label>Beleg / Referenz des tatsächlichen Schritts<input value={reference} maxLength={240} onChange={e=>setReference(e.target.value)} placeholder={state.status==='pending'?'Portal-/E-Mail-Übermittlungsbeleg':state.status==='submitted'?'SECPLAN-Auftragsbestätigung':'SECPLAN-Versandbeleg'}/></label>
+   <label>Beleg / Referenz des tatsächlichen Schritts<input value={reference} maxLength={240} onChange={e=>setReference(e.target.value)} placeholder={state.status==='pending'?'SECPLAN-Portalbestellung / Übermittlungsbeleg':state.status==='submitted'?'SECPLAN-Auftragsbestätigung':'SECPLAN-Versandbeleg'}/></label>
    {state.status==='pending'&&<><label>Nachweis der SECPLAN-Verfügbarkeit<input value={stock} maxLength={240} onChange={e=>setStock(e.target.value)} placeholder="Bestandsbestätigung / Portalabfrage mit Datum"/></label><label><input type="checkbox" checked={stockChecked} onChange={e=>setStockChecked(e.target.checked)}/> Alle Artikel und Mengen bei SECPLAN geprüft und den Auftrag tatsächlich übermittelt.</label><button type="button" className="button secondary" disabled={busy||!stockChecked||reference.trim().length<3||stock.trim().length<3} onClick={()=>act('submitted')}>Manuelle Übermittlung dokumentieren</button></>}
    {state.status==='submitted'&&<button type="button" className="button secondary" disabled={busy||reference.trim().length<3} onClick={()=>act('confirmed')}>SECPLAN-Auftragsbestätigung erfassen</button>}
    {state.status==='confirmed'&&<><label>Tatsächlicher Versandzeitpunkt (Ortszeit deines Browsers)<input type="datetime-local" value={when} onChange={e=>setWhen(e.target.value)}/></label><label>Transporteur (optional)<input value={carrier} maxLength={80} onChange={e=>setCarrier(e.target.value)}/></label><label>Sendungsnummer (optional)<input value={tracking} maxLength={160} onChange={e=>setTracking(e.target.value)}/></label><label><input type="checkbox" checked={complete} onChange={e=>setComplete(e.target.checked)}/> SECPLAN hat den tatsächlichen Versand aller Artikel bestätigt. Eine reine Auftragsannahme oder Teillieferung reicht nicht.</label><button type="button" className="button" disabled={busy||!complete||!when||reference.trim().length<3} onClick={()=>act('shipped')}>SECPLAN-Versand bestätigen und Rechnung anstoßen</button></>}
