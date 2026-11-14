@@ -1,0 +1,29 @@
+'use client';
+import {useEffect,useState} from 'react';
+import Link from 'next/link';
+import Application from './views/application';
+import Training from './views/training';
+import Agency from './views/agency';
+import Merch from './views/merch';
+import Finance from './views/finance';
+import D2D from './views/d2d';
+import Admin from './views/admin';
+export type Row=Record<string,any>;
+export type Action=(action:string,data?:Row)=>Promise<any>;
+export const eur=(c:number=0)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(c/100);
+export const when=(s?:string|null)=>s?new Date(s).toLocaleString('de-DE',{timeZone:'Europe/Berlin'}):'Noch nicht';
+export default function Portal(){const [view,setView]=useState('overview'),[data,setData]=useState<Row|null>(null),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[query,setQuery]=useState('');
+ async function load(v=view,q=query){const r=await fetch('/api/data?view='+v+q,{cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'Portal nicht erreichbar');setData(d);}
+ useEffect(()=>{let alive=true;fetch('/api/data?view='+view+query,{cache:'no-store'}).then(async r=>{const d=await r.json();if(!r.ok)throw new Error(d.error||'Portal nicht erreichbar');if(alive)setData(d)}).catch(e=>{if(alive)setMessage(e.message)});return()=>{alive=false}},[view,query]);
+ const act:Action=async(action,fields={})=>{if(busy)throw new Error('Bitte laufende Aktion abwarten.');setBusy(true);setMessage('');try{const r=await fetch('/api/command',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,...fields})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Aktion fehlgeschlagen');await load();setMessage('Gespeichert.');return d.result}catch(e){setMessage(e instanceof Error?e.message:'Aktion fehlgeschlagen');throw e}finally{setBusy(false)}};
+ const me=data?.account,active=me?.status==='active';
+ if(!data)return <main className="reading"><h1>Partnerbereich wird geladen …</h1><p role="status">{message}</p><Link href="/login">Zur Anmeldung</Link></main>;
+ if(!me)return <main className="reading"><h1>Bitte melde dich an.</h1><p>{data.configured?'Deine Partnerdaten werden erst nach bestätigter Anmeldung geladen.':'Die Portal-Datenverbindung wird noch eingerichtet.'}</p><Link className="button" href="/login">Anmeldung öffnen</Link></main>;
+ const tabs=[['overview','Übersicht'],['d2d','Gebiete & D2D'],['training','Akademie'],['merch','Werbemittel'],['finance','Provisionen'],...(['agency','admin'].includes(me.role)?[['agency','Meine Agentur']]:[]),...(me.role==='admin'?[['admin','Administration']]:[])];
+ return <main className="workspace"><aside className="sidebar"><p className="eyebrow">DEIN WORKSPACE</p><strong>{me.full_name||me.email}</strong><span className="role">{me.role==='admin'?'Administration':me.role==='agency'?'Agentur':'Vertriebspartner'}</span><nav aria-label="Partnernavigation">{tabs.map(([key,label])=><button key={key} className={view===key?'selected':''} disabled={!active&&key!=='overview'} onClick={()=>{setView(key);setQuery('');setMessage('')}}>{label}</button>)}</nav><button className="textButton" onClick={async()=>{await fetch('/api/auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'logout'})});location.href='/login'}}>Abmelden</button></aside><section className="workspaceBody"><div className="sectionTop"><div><p className="eyebrow">SICHERE NACHT · PARTNER</p><h1>{tabs.find(t=>t[0]===view)?.[1]||'Dein Antrag'}</h1></div><span className="pill">{active?'Zugang aktiv':me.status==='pending'?'In Prüfung':'Antrag vervollständigen'}</span></div><p className="status" role="status">{busy?'Aktion wird geprüft …':message}</p>
+ {!active?<Application data={data} act={act} reload={()=>load()}/>:<>
+ {view==='overview'&&<><div className="metricGrid"><article className="metric"><small>Provisionssatz</small><strong>{data.commercialPolicy?data.commercialPolicy.ownRateBps/100+' %':'–'}</strong><span>vom freigegebenen Nettowarenumsatz</span></article><article className="metric"><small>Eigene Stornoreserve</small><strong>{eur(data.reserves?.find((r:Row)=>r.earner_id===me.user_id)?.balance_cents)}</strong><span>{data.commercialPolicy?.reserveSummary}</span></article><article className="metric"><small>Monteurstatus</small><strong>{me.installer_approved_at?'Freigegeben':me.installer_requested_at?'Beantragt':'Optional'}</strong><span>Masterclass und Adminprüfung erforderlich</span></article></div><section className="card"><p className="eyebrow">DEIN EMPFEHLUNGSLINK</p><h2>Persönlich zugeordnet. Ohne Tracking-Tricks.</h2><code className="referral">https://sichere-nacht.de/?vp={me.referral_code}</code><p>Die Zuordnung im Shop erfolgt nach freiwilliger Zustimmung im selben Browser. Gelöschte Daten oder ein anderes Gerät werden nicht heimlich wiedererkannt.</p><a className="button secondary" href="/api/qr">Eigenen QR-Code herunterladen</a></section><div className="twoColumns"><section className="card"><h2>Dein nächster Schritt</h2><p>Schulungstermin buchen, Werbemittel anfragen oder ein freigegebenes Gebiet übernehmen.</p><button className="button" onClick={()=>setView('training')}>Zur Akademie</button></section><section className="card"><h2>Monatsabrechnung</h2><p>Ein voller Kalendermonat. Abrechnung zum Ende des Folgemonats. Stornos bleiben nachvollziehbare Korrekturen, nicht verschwundene Buchungen.</p><button className="button secondary" onClick={()=>setView('finance')}>Provisionen ansehen</button></section></div></>}
+ {view==='training'&&<Training data={data} act={act}/>}{view==='agency'&&<Agency data={data} act={act}/>}{view==='merch'&&<Merch data={data} act={act}/>}{view==='finance'&&<Finance data={data}/>}{view==='d2d'&&<D2D data={data} act={act} setQuery={setQuery} reload={()=>load()}/>}{view==='admin'&&<Admin data={data} act={act}/>}
+ </>}
+ </section></main>;
+}

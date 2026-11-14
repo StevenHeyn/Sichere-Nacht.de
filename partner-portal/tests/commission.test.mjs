@@ -1,0 +1,9 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {commissionPreview,settlementDate,berlinMonth,reserveReleaseDate} from '../lib/commission.mjs';
+test('direct VP: 15%, reserve 5% of commission not of turnover',()=>{const r=commissionPreview({netCents:100000});assert.equal(r.commissionCents,15000);assert.equal(r.reserveWithheldCents,750);assert.equal(r.payableCents,14250)});
+test('agency total includes VP15, never20+15',()=>{const r=commissionPreview({netCents:100000,underAgency:true});assert.equal(r.commissionCents,20000);assert.equal(r.earnerCommissionCents,15000);assert.equal(r.agencyDifferenceCents,5000);assert.equal(r.payableCents,19250)});
+test('agency own work 20%',()=>{const r=commissionPreview({netCents:100000,agency:true});assert.equal(r.reserveWithheldCents,1000);assert.equal(r.payableCents,19000)});
+test('reserve stops precisely at EUR2500',()=>{const r=commissionPreview({netCents:100000,reserveCents:249900});assert.equal(r.reserveWithheldCents,100);assert.equal(r.nextReserveCents,250000);assert.equal(commissionPreview({netCents:100000,reserveCents:250000}).reserveWithheldCents,0)});
+test('zero and invalid values',()=>{assert.equal(commissionPreview({netCents:0}).payableCents,0);for(const v of [-1,0.5,NaN,Infinity])assert.throws(()=>commissionPreview({netCents:v}))});
+test('full next calendar month, including leap year',()=>{assert.equal(settlementDate('2026-01'),'2026-02-28');assert.equal(settlementDate('2027-12'),'2028-01-31');assert.equal(settlementDate('2028-01'),'2028-02-29')});
+test('German month boundaries not server UTC',()=>{assert.equal(berlinMonth('2026-11-30T23:30:00Z'),'2026-12');assert.equal(berlinMonth('2026-06-30T22:30:00Z'),'2026-07')});
+test('12 calendar months including Feb29',()=>{assert.equal(reserveReleaseDate('2024-02-29T10:00:00Z'),'2025-02-28T10:00:00.000Z');assert.equal(reserveReleaseDate('2026-11-14T10:00:00Z'),'2027-11-14T10:00:00.000Z')});
