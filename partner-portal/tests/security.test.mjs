@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
-const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');const sql=p=>read('../../database/'+p);
+const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');const sql=p=>read('../database/'+p);
 test('portal has no service role or shared shop admin key',()=>{for(const f of ['lib/server.ts','app/api/auth/route.ts','app/api/data/route.ts','app/api/command/route.ts','app/api/documents/route.ts'])assert.doesNotMatch(read(f),/SUPABASE_SERVICE_ROLE_KEY|ORDERS_ADMIN_TOKEN/);assert.match(read('lib/server.ts'),/auth\.getUser/)});
 test('roles are not accepted from signup metadata',()=>assert.doesNotMatch(read('app/api/auth/route.ts'),/user_metadata|app_metadata|role:|data:.*role/));
 test('private contacts and evidence have owner/admin-only read rules',()=>{assert.match(sql('vp_portal_d2d.sql'),/owner_id=auth.uid\(\).*retain_until>now/);assert.doesNotMatch(sql('vp_portal_d2d.sql').match(/create policy vp_contact_read[^;]+/)[0],/agency_id|payee_id/);assert.match(sql('vp_portal_hardening.sql'),/create policy vp_evidence_read/)});
