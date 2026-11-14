@@ -1,17 +1,4 @@
+import {useId} from 'react';
 import Link from 'next/link';
 type Props={compact?:boolean};
-export default function BrandLogo({compact=false}:Props){
- return <Link href="/" className={'snLogo '+(compact?'snLogoCompact':'')} aria-label="Sichere Nacht – zur Startseite">
- <svg className="snLogoMark" viewBox="0 0 64 72" aria-hidden="true" focusable="false">
- <defs><linearGradient id="shieldFade" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#243c4f"/><stop offset="1" stopColor="#0b1827"/></linearGradient></defs>
- <path d="M32 3 58 12v23c0 16-11 27-26 34C17 62 6 51 6 35V12Z" fill="url(#shieldFade)" stroke="#85dfce" strokeWidth="2.2"/>
- <path d="M16 39 32 24l16 15" fill="none" stroke="#f4fbff" strokeWidth="3.3" strokeLinecap="round" strokeLinejoin="round"/>
- <path d="M21 37v15h22V37" fill="none" stroke="#f4fbff" strokeWidth="2.4" strokeLinejoin="round"/>
- <path d="M29 42h6v10h-6z" fill="#8be3c9"/>
- <path d="M19 56c9 4 19 4 27-1" fill="none" stroke="#8be3c9" strokeWidth="2.2" strokeLinecap="round"/>
- <path d="M43 14a8 8 0 1 0 7 12 9 9 0 1 1-7-12Z" fill="#e6faf6"/>
- <circle cx="20" cy="20" r="1.4" fill="#85dfce"/>
- </svg>
- <span className="snLogoText"><strong>SICHERE <span>NACHT</span></strong>{!compact&&<small>ALARMANLAGEN &amp; SICHERHEIT</small>}</span>
- </Link>;
-}
+export default function BrandLogo({compact=false}:Props){const gradient='shield-'+useId().replace(/:/g,'');return <Link href="/" className={'snLogo '+(compact?'snLogoCompact':'')} aria-label="Sichere Nacht – zur Startseite"><svg className="snLogoMark" viewBox="0 0 64 72" aria-hidden="true" focusable="false"><defs><linearGradient id={gradient} x1="0" y1="0" x2="1" y2="1"><stop stopColor="#243c4f"/><stop offset="1" stopColor="#0b1827"/></linearGradient></defs><path d="M32 3 58 12v23c0 16-11 27-26 34C17 62 6 51 6 35V12Z" fill={'url(#'+gradient+')'} stroke="#85dfce" strokeWidth="2.2"/><path d="M16 39 32 24l16 15" fill="none" stroke="#f4fbff" strokeWidth="3.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M21 37v15h22V37" fill="none" stroke="#f4fbff" strokeWidth="2.4" strokeLinejoin="round"/><path d="M29 42h6v10h-6z" fill="#8be3c9"/><path d="M19 56c9 4 19 4 27-1" fill="none" stroke="#8be3c9" strokeWidth="2.2" strokeLinecap="round"/><path d="M43 14a8 8 0 1 0 7 12 9 9 0 1 1-7-12Z" fill="#e6faf6"/><circle cx="20" cy="20" r="1.4" fill="#85dfce"/></svg><span className="snLogoText"><strong>SICHERE <span>NACHT</span></strong>{!compact&&<small>ALARMANLAGEN &amp; SICHERHEIT</small>}</span></Link>}

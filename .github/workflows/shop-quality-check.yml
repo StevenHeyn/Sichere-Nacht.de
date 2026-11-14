@@ -1,0 +1,38 @@
+name: Shop quality and responsive QA
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: shop-quality-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund --no-package-lock
+      - name: System, consent and Stripe form regression tests
+        run: |
+          node --experimental-strip-types --test scripts/checkout-form-compat-test.mjs
+          node --test scripts/shop-quality-test.mjs
+      - run: npm run build
+      - name: Browser test dependencies (CI only)
+        run: npm install --no-save --no-package-lock playwright @axe-core/playwright && npx playwright install --with-deps chromium
+      - name: Responsive and keyboard checks, no Stripe payment
+        run: |
+          npm run start -- -p 3000 > /tmp/shop-server.log 2>&1 &
+          for n in $(seq 1 40); do curl -fsS http://localhost:3000 >/dev/null && break || sleep 1; done
+          node scripts/shop-browser-qa.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shop-quality-qa
+          path: quality-qa/
+          retention-days: 5

@@ -24,10 +24,13 @@ export function validateBuyerInput(value:unknown,now=new Date()):BuyerRecord{
  if(input.businessPurchaseDeclared!==true)throw new Error('Bitte den geschäftlichen Kaufzweck ausdrücklich bestätigen.');
  return {customer_type:'b2b',buyer_company:name,business_purchase_declared:true,buyer_policy_version:BUYER_POLICY_VERSION,buyer_declared_at:now.toISOString()};
 }
-export function applyBuyerMetadata(form:URLSearchParams,buyer:BuyerRecord):void{
+export function applyBuyerMetadata(form:URLSearchParams,buyer:BuyerRecord,uiMode:'hosted'|'embedded'|'form'='hosted'):void{
  if(buyer.customer_type==='unclassified')throw new Error('Kaufart vor dem Checkout erforderlich.');
  for(const [key,value] of Object.entries(buyer))form.set('metadata['+key+']',value===null?'':String(value));
- form.set('custom_text[submit][message]',buyer.customer_type==='b2b'?B2B_WITHDRAWAL_NOTE:B2C_WITHDRAWAL_NOTE);
+ // Stripe's form SDK rejects the Checkout custom_text parameter. BuyerSelector
+ // keeps the purchase-purpose declaration and notices visible on our checkout page.
+ if(uiMode==='form')form.delete('custom_text[submit][message]');
+ else form.set('custom_text[submit][message]',buyer.customer_type==='b2b'?B2B_WITHDRAWAL_NOTE:B2C_WITHDRAWAL_NOTE);
 }
 export function buyerFromStripeMetadata(metadata:unknown):BuyerRecord{
  const m=metadata&&typeof metadata==='object'?metadata as Record<string,unknown>:{};
