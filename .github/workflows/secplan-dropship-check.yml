@@ -9,6 +9,12 @@ on:
       - 'app/**'
       - 'database/secplan_dropship.sql'
       - 'scripts/secplan-dropship-test.mjs'
+      - 'scripts/secplan-portal-test.mjs'
+      - 'scripts/supplier-visibility-test.mjs'
+      - 'scripts/supplier-http-qa.mjs'
+      - 'scripts/prepare-public-catalog.mjs'
+      - 'products.json'
+      - 'package.json'
       - '.github/workflows/secplan-dropship-check.yml'
 permissions:
   contents: read
