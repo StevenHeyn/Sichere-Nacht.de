@@ -11,6 +11,7 @@ export async function POST(request:Request){try{const d=await body(request,12000
  case 'installer':fn='vp_request_installer';args={};break;
  case 'merch_request':fn='vp_merch_request';args={p_product:d.productId,p_quantity:d.quantity};break;
  case 'merch_accept':if(d.accept!==true)throw new Error('Kostenpflichtiges Angebot ausdrücklich bestätigen.');fn='vp_merch_accept';args={p_id:d.id,p_version:d.version};break;
+ case 'select_area':fn='vp_select_territory';args={p_label:str(d.label,200),p_bbox:d.bbox,p_city:str(d.city,160)};break;
  case 'claim_area':fn='vp_claim_territory';args={p_id:d.id};break;
  case 'claim_address':fn='vp_claim_address';args={p_id:d.id};break;
  case 'qualify':fn='vp_qualify_address';args={p_id:d.id,p_status:d.status,p_households:d.households||null};break;
