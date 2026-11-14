@@ -11,6 +11,13 @@ export async function POST(request:Request){try{const d=await body(request),db=a
  return json({ok:true,message:'Bitte bestätige deine E-Mail. Das technische Konto ist noch keine freigeschaltete Vertriebspartnerschaft.'});
  }
  if(action==='login'){if(!password||password.length>128)throw new Error('Zugangsdaten prüfen.');const {error}=await db.auth.signInWithPassword({email,password});if(error)throw new Error('Anmeldung fehlgeschlagen. Bitte Zugangsdaten und E-Mail-Bestätigung prüfen.');return json({ok:true})}
- if(action==='reset'){await db.auth.resetPasswordForEmail(email,{redirectTo:new URL('/auth/callback?recovery=1',request.url).href});return json({ok:true,message:'Falls ein passendes Konto besteht, erhältst du einen Link zur Passwortänderung.'})}
+ if(action==='reset'){
+ const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:new URL('/auth/callback?recovery=1',request.url).href});
+ if(error){
+ if(error.status===429||error.code==='over_email_send_rate_limit'||error.code==='over_request_rate_limit')return json({error:'Das E-Mail-Versandlimit ist erreicht. Es wurde kein neuer Link versendet. Bitte versuche es später erneut oder melde dich mit deinem bisherigen Passwort an.'},429);
+ return json({error:'Der Rücksetzlink konnte derzeit nicht angefordert werden. Bitte versuche es später erneut.'},503);
+ }
+ return json({ok:true,message:'Falls ein passendes Konto besteht, erhältst du einen Link zur Passwortänderung. Prüfe auch den Spamordner und öffne nur den neuesten Link im selben Browser, in dem du ihn angefordert hast.'});
+ }
  throw new Error('Unbekannte Anmeldeaktion.');
  }catch(e){return failure(e)}}
