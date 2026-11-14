@@ -1,10 +1,10 @@
-import {client,configured,member,json,failure} from '../../../lib/server';
+import {client,configured,member,json,failure,SignInRequired} from '../../../lib/server';
 export const dynamic='force-dynamic';
 export async function GET(request:Request){try{
  if(!configured())return json({configured:false,settings:{registration_open:false,d2d_open:false,settlement_open:false},terms:null});
  const db0=await client(),settings=await db0.from('vp_settings').select('registration_open,d2d_open,settlement_open,claim_days,cooldown_days').single(),terms=await db0.from('vp_terms').select('id,version,title,body,content_hash,published_at').eq('status','published').maybeSingle();
- if(settings.error)throw new Error('Portal-Datenbankschema noch nicht bereit.');
- let m;try{m=await member()}catch{return json({configured:true,settings:settings.data,terms:terms.data,account:null})}
+ if(settings.error||terms.error){console.error('Portal configuration lookup failed',{settingsCode:settings.error?.code,termsCode:terms.error?.code});return json({error:'Die Portalverbindung ist vorübergehend nicht verfügbar. Bitte später erneut versuchen.'},503);}
+ let m;try{m=await member()}catch(e){if(e instanceof SignInRequired)return json({configured:true,settings:settings.data,terms:terms.data,account:null});throw e;}
  const {db,account}=m,view=new URL(request.url).searchParams.get('view')||'overview';
  const documents=await db.from('vp_documents').select('id,kind,bytes,created_at').eq('user_id',account.user_id);
  const result:Record<string,unknown>={configured:true,settings:settings.data,terms:terms.data,account,documents:documents.data||[]};
@@ -21,7 +21,7 @@ export async function GET(request:Request){try{
  if(view==='d2d'){
  await query('territories',db.from('vp_territories').select('*').order('label'));
  const areaId=new URL(request.url).searchParams.get('area'),areas=result.territories as Array<Record<string,unknown>>,area=areas.find(a=>a.id===areaId);
- if(area){const offset=Math.max(0,Math.min(100000,Math.floor(Number(new URL(request.url).searchParams.get('offset'))||0)));await query('addresses',db.from('vp_addresses').select('*').gte('longitude',Number(area.west)).lte('longitude',Number(area.east)).gte('latitude',Number(area.south)).lte('latitude',Number(area.north)).order('street').order('house_number').range(offset,offset+199));result.addressOffset=offset;}
+ if(area){const offset=Math.max(0,Math.min(100000,Math.floor(Number(new URL(request.url).searchParams.get('offset'))||0)));await query('addresses',db.from('vp_addresses').select('*').gte('longitude',Number(area.west)).lte('longitude',Number(area.east)).gte('latitude',Number(area.south)).lte('latitude',Number(area.north)).order('street').order('house_number').order('id').range(offset,offset+199));result.addressOffset=offset;result.areaId=area.id;}
  const addressId=new URL(request.url).searchParams.get('address');if(addressId){await query('contacts',db.from('vp_d2d_contacts').select('*').eq('address_id',addressId));const ids=(result.contacts as Array<{id:string}>).map(x=>x.id);if(ids.length)await query('contact_evidence',db.from('vp_contact_evidence').select('id,contact_id,phone_permission,email_permission,recorded_at,retain_until,last_use_at').in('contact_id',ids));}
  }
  if(view==='admin'){
