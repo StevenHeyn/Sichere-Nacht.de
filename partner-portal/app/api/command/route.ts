@@ -5,7 +5,7 @@ export async function POST(request:Request){try{const d=await body(request),{db,
  if(str(d.action).startsWith('admin_')&&account.role!=='admin')throw new Error('Adminzugang erforderlich.');
  switch(d.action){
  case 'password':{const password=str(d.password,129);if(password.length<12||password.length>128)throw new Error('Passwort muss 12 bis 128 Zeichen haben.');const {error}=await db.auth.updateUser({password});if(error)throw new Error('Passwortänderung fehlgeschlagen.');return json({ok:true})}
- case 'application':if(d.acceptTerms!==true)throw new Error('Die freigegebene VP-Vertragsfassung muss ausdrücklich akzeptiert werden.');fn='vp_submit_application';args={p_profile:d.profile,p_terms_id:d.termsId,p_invite_token:str(d.inviteToken,128)||null};break;
+ case 'application':if(d.acceptTerms!==true||!d.profile||typeof d.profile!=='object'||Array.isArray(d.profile))throw new Error('Profil und ausdrückliche Vertragsannahme erforderlich.');fn='vp_submit_application';args={p_profile:{...d.profile,termsAccepted:true},p_terms_id:d.termsId,p_invite_token:str(d.inviteToken,128)||null};break;
  case 'invite':fn='vp_invite';args={p_name:str(d.name,160),p_email:str(d.email,200)};break;
  case 'book':fn='vp_book_training';args={p_slot:d.slotId,p_cancel:d.cancel===true};break;
  case 'installer':fn='vp_request_installer';args={};break;
@@ -16,10 +16,12 @@ export async function POST(request:Request){try{const d=await body(request),{db,
  case 'qualify':fn='vp_qualify_address';args={p_id:d.id,p_status:d.status,p_households:d.households||null};break;
  case 'contact':fn='vp_save_contact';args={p_address:d.addressId,p_contact:d.id||null,p_data:d.contact};break;
  case 'delete_contact':fn='vp_delete_contact';args={p_id:d.id};break;
+ case 'permission_use':fn='vp_record_permission_use';args={p_id:d.id,p_reason:str(d.reason)};break;
  case 'admin_account':fn='vp_admin_account';args={p_user:d.userId,p_action:d.operation,p_reason:str(d.reason)};break;
  case 'admin_learning':fn='vp_admin_learning';args={p_action:d.operation,p_data:d.data};break;
  case 'admin_merch':fn='vp_admin_merch';args={p_id:d.id,p_total:d.totalCents,p_description:str(d.description,5000)};break;
  case 'admin_area':fn='vp_admin_area';args={p_label:str(d.label,200),p_bbox:d.bbox};break;
+ case 'admin_address':fn='vp_admin_address';args={p_id:d.id,p_reason:str(d.reason),p_reset_import:d.resetImport===true};break;
  case 'admin_terms':fn='vp_publish_terms';args={p_version:str(d.version,100),p_title:str(d.title,200),p_body:str(d.text,20000),p_review:str(d.review,1000)};break;
  case 'admin_settings':fn='vp_admin_settings';args={p_registration:d.registration===true,p_d2d:d.d2d===true,p_settlement:d.settlement===true,p_reason:str(d.reason)};break;
  case 'admin_reconcile':fn='vp_reconcile_earning';args={p_id:d.id,p_status:d.status,p_remaining:d.remainingCents,p_reference:str(d.reference,1000)};break;
