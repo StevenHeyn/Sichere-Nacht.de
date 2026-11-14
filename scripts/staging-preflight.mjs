@@ -1,6 +1,4 @@
-// Temporary acceptance runner is strictly disabled unless explicitly enabled for this preview.
-if(process.env.SN_SANDBOX_ACCEPTANCE==='orders-13-14-20261114')await import('./sandbox-order-acceptance.mjs');
-// Read-only checks. Never prints credentials or customer records.
+// Read-only checks, strictly restricted to our staging branch. Never prints credentials or customer records.
 if(process.env.VERCEL_ENV==='preview'&&process.env.VERCEL_GIT_COMMIT_REF==='feature/combined-shop-preview'){
  const key=process.env.STRIPE_SECRET_KEY||'';
  if(!key.startsWith('sk_test_'))throw new Error('Staging requires a Stripe test secret, never a live secret');
