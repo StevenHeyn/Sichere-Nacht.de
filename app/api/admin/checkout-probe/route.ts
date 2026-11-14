@@ -1,6 +1,6 @@
 import {createHash, timingSafeEqual} from 'node:crypto';
 import {NextResponse} from 'next/server';
-import products from '../../../../products.json';
+import products from '../../../../lib/public-products.generated.json';
 import {runCheckoutWriteProbe} from '../../../../lib/checkout-write-probe';
 import {applyCheckoutBranding} from '../../../../lib/stripe-shop';
 

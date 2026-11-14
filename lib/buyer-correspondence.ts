@@ -20,7 +20,7 @@ Sie tragen die unmittelbaren Kosten der Rücksendung der Waren.
 Für einen etwaigen Wertverlust müssen Sie nur aufkommen, wenn dieser auf einen zur Prüfung der Beschaffenheit, Eigenschaften und Funktionsweise nicht notwendigen Umgang zurückzuführen ist.
 
 Direktversand
-SECPLAN versendet die Ware. Ihr Vertragspartner bleibt H & K Projekt UG. Die Rücksendeadresse oben bleibt maßgeblich; eine vorherige Genehmigung oder SECPLAN-RMA-Nummer ist keine Voraussetzung des Verbraucherwiderrufs.
+Die Auslieferung kann durch beauftragte Versandpartner erfolgen. Ihr Vertragspartner bleibt H & K Projekt UG. Die Rücksendeadresse oben bleibt maßgeblich; eine vorherige Genehmigung oder RMA-Nummer eines Lieferanten ist keine Voraussetzung des Verbraucherwiderrufs.
 
 Muster-Widerrufsformular
 Wenn Sie den Vertrag widerrufen wollen, füllen Sie bitte dieses Formular aus und senden Sie es zurück:

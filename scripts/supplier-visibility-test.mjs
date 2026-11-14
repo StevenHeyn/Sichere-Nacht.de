@@ -1,0 +1,15 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync,readdirSync,existsSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import path from 'node:path';
+const read=p=>readFileSync(p,'utf8'),name=/sec[\s-]?plan|Reichelsheim|Buchenstra[ßs]e/i;
+const files=dir=>readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?files(path.join(dir,e.name)):[path.join(dir,e.name)]);
+execFileSync(process.execPath,['scripts/prepare-public-catalog.mjs']);
+test('all page and client component source is supplier-neutral',()=>{for(const file of files('app').filter(p=>/\.tsx$/.test(p)))assert.doesNotMatch(read(file),name,file)});
+test('future customer mails and buyer attachments have no supplier name',()=>{for(const f of ['lib/order-notifications.ts','lib/buyer-correspondence.ts','lib/invoice-pdf.ts','lib/delivery-policy.ts'])assert.doesNotMatch(read(f),name,f)});
+test('privacy has precise recipient categories, contractual purpose and access rights',()=>{const s=read('app/datenschutz/page.tsx');for(const token of ['Großhändler und Distributoren','Sicherheits- und Alarmtechnik','in Deutschland','Paket- und Transportdienstleister','Name des Lieferempfängers','Art. 6 Abs. 1 lit. b DSGVO','keine pauschale Einwilligung','Art. 15 DSGVO','konkreten Empfänger'])assert.ok(s.includes(token),token);assert.doesNotMatch(s,name)});
+test('public catalog excludes supplier-logo product without changing remaining prices or names',()=>{const all=JSON.parse(read('products.json')),shown=JSON.parse(read('lib/public-products.generated.json'));assert.equal(shown.length,all.length-1);assert.deepEqual(shown,all.filter(p=>p.sku!=='77436.63.WH-ST1'));assert.doesNotMatch(JSON.stringify(shown),name);assert.equal(existsSync('public/ajax-images/77436.63.WH-ST1.webp'),false);assert.equal(existsSync('private-assets/77436.63.WH-ST1.webp'),true)});
+test('all shopping entry points use the projected catalog, not raw supplier records',()=>{for(const f of ['app/api/checkout/route.ts','app/warenkorb/page.tsx','app/konfigurator/page.tsx','app/shop/[sku]/page.tsx','app/shop/page.tsx','app/shop/kategorie/[gruppe]/page.tsx']){assert.match(read(f),/lib\/public-products.generated.json/,f);assert.doesNotMatch(read(f),/from ['"][.\/]+products.json/,f)}});
+test('existing payment, partner and B2B guardrails stay in place',()=>{const s=read('app/api/checkout/route.ts');for(const flag of ['PAYMENTS_LIVE_APPROVED','CHECKOUT_TEST_ENABLED','checkSystem','validateBuyerInput','registered.includes','parseReferral','priceBySku'])assert.ok(s.includes(flag));assert.match(s,/const shipping=990/)});
+if(process.argv.includes('--built'))test('no supplier identity in browser bundles',()=>{const bundleFiles=files('.next/static').filter(p=>/\.(js|json|css|map)$/.test(p));assert.ok(bundleFiles.length>0);for(const f of bundleFiles)assert.doesNotMatch(read(f),name,f)});

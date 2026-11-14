@@ -2,3 +2,6 @@ node_modules
 .next
 .env*
 !.env.example
+
+# Prepared from the unchanged source catalog before dev/build.
+/lib/public-products.generated.json
