@@ -13,7 +13,9 @@ export async function GET(request:Request){try{
  result.commercialPolicy=commercialPolicy(account.role);
  async function query(name:string,q:PromiseLike<{data:unknown;error:unknown}>){const r=await q;if(r.error)throw new Error('Datenbereich '+name+' konnte nicht geladen werden.');result[name]=r.data}
  if(view==='overview'||view==='finance'){
- await query('earnings',db.from('vp_earnings').select('*').order('order_at',{ascending:false}).limit(200));await query('reserves',db.from('vp_reserves').select('*'));await query('statements',db.from('vp_statements').select('*').order('period',{ascending:false}).limit(100));await query('finance_lines',db.from('vp_finance_lines').select('*').order('created_at',{ascending:false}).limit(300));await query('reserve_releases',db.from('vp_reserve_releases').select('*').limit(100));
+ const privileged=['agency','admin'].includes(account.role);
+ if(privileged)await query('earnings',db.from('vp_earnings').select('*').order('order_at',{ascending:false}).limit(200));
+ else {const safe=await db.rpc('vp_own_finance');if(safe.error)throw new Error('Eigene Provisionsdaten konnten nicht geladen werden.');Object.assign(result,safe.data);}await query('reserves',db.from('vp_reserves').select('*'));await query('statements',db.from('vp_statements').select('*').order('period',{ascending:false}).limit(100));if(privileged)await query('finance_lines',db.from('vp_finance_lines').select('*').order('created_at',{ascending:false}).limit(300));await query('reserve_releases',db.from('vp_reserve_releases').select('*').limit(100));
  }
  if(view==='training'||view==='overview'){
  await query('courses',db.from('vp_courses').select('*').order('created_at',{ascending:false}));await query('slots',db.rpc('vp_training_availability'));await query('bookings',db.from('vp_training_bookings').select('*').limit(300));
