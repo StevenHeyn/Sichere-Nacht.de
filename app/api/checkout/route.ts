@@ -1,5 +1,5 @@
 import {NextResponse} from 'next/server';
-import products from '../../../products.json';
+import products from '../../../lib/public-products.generated.json';
 import {applyCheckoutBranding} from '../../../lib/stripe-shop';
 import {validateBuyerInput,applyBuyerMetadata} from '../../../lib/buyer-policy';
 import {logStripeFailure} from '../../../lib/stripe-diagnostics';

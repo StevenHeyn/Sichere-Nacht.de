@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {writeFileSync,mkdirSync} from 'node:fs';
+const base=process.env.SUPPLIER_QA_BASE||'http://127.0.0.1:3100';
+const local=/^http:\/\/(?:localhost|127\.0\.0\.1):\d+$/.test(base);
+if(!local&&base!=='https://sichere-nacht.de')throw Error('Only local build or the explicit shop origin is permitted.');
+const forbidden=/sec[\s-]?plan|Reichelsheim|Buchenstra[ßs]e/i,results=[];
+const paths=['/','/shop','/konfigurator','/warenkorb','/shop/38198.02.WH1','/shop/kategorie/zentralen','/versand','/agb','/widerruf','/widerruf-online','/datenschutz','/montage-hamburg','/alarmanlagen/gewerbe','/ratgeber','/admin/bestellungen'];
+for(const path of paths){const response=await fetch(base+path);const html=await response.text();assert.equal(response.status,200,path);assert.doesNotMatch(html,forbidden,path);results.push({path,status:response.status,supplierIdentityPresent:false});}
+for(const path of ['/shop/77436.63.WH-ST1','/ajax-images/77436.63.WH-ST1.webp']){const response=await fetch(base+path);assert.equal(response.status,404,path);results.push({path,status:response.status});}
+for(const authorization of ['', 'Bearer VP-TEST', 'Bearer not-the-admin']){const response=await fetch(base+'/api/admin/supplier-settings',{headers:authorization?{authorization}:{}});const text=await response.text();assert.equal(response.status,401);assert.doesNotMatch(text,forbidden);assert.match(response.headers.get('cache-control')||'',/no-store/);results.push({path:'/api/admin/supplier-settings',credential:authorization?'invalid':'absent',status:response.status});}
+if(local){const response=await fetch(base+'/api/admin/supplier-settings',{headers:{authorization:'Bearer LOCAL-QA-SUPPLIER-ONLY'}});assert.equal(response.status,200);const data=await response.json();assert.equal(data.loginUrl,'https://www.secplan.de/account/login');assert.equal(data.automaticTransmission,false);assert.match(response.headers.get('vary')||'',/Authorization/i);results.push({path:'/api/admin/supplier-settings',credential:'synthetic-local-admin',status:response.status,internalPortalAvailable:true});}
+mkdirSync('quality-qa',{recursive:true});writeFileSync('quality-qa/supplier-http.json',JSON.stringify({environment:local?'local build, synthetic admin credential':'production, unauthenticated checks only',results},null,2));console.log(JSON.stringify({passed:results.length,local,results},null,2));

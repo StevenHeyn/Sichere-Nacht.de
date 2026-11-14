@@ -1,5 +1,5 @@
 import {notFound} from 'next/navigation';
-import products from '../../../../products.json';
+import products from '../../../../lib/public-products.generated.json';
 import {SHOP_GROUPS} from '../../../../lib/shop-groups';
 import {pageMetadata} from '../../../../lib/seo';
 import ShopView from '../../shop-view';

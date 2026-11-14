@@ -32,6 +32,6 @@ try{
  await p.goto(base+'/konfigurator');await p.getByRole('button',{name:'Mengen direkt erfassen',exact:true}).click();await p.getByLabel('Räume mit Bewegungserkennung').fill('6');const item=p.locator('.recProduct').filter({hasText:'MotionCam'});assert.equal(await item.locator('input[type=number]').inputValue(),'6');await item.locator('input[type=number]').fill('4');assert.equal(await item.locator('input[type=number]').inputValue(),'4');report.functional.roomCountsAndManualQuantities=true;
  await p.goto(base+'/');await p.keyboard.press('Tab');assert.equal(await p.locator('.skipLink').evaluate(e=>e===document.activeElement),true);await p.keyboard.press('Enter');report.functional.skipLink=true;
  await ctx.close();
- writeFileSync('quality-qa/public-catalog-prices.json',JSON.stringify(JSON.parse(readFileSync('products.json','utf8')).map(({sku,name,priceCents,uvpCents,ean})=>({sku,name,priceCents,uvpCents,ean}))));
+ writeFileSync('quality-qa/public-catalog-prices.json',JSON.stringify(JSON.parse(readFileSync('lib/public-products.generated.json','utf8')).map(({sku,name,priceCents,uvpCents,ean})=>({sku,name,priceCents,uvpCents,ean}))));
 }catch(e){failures.push(e instanceof Error?e.message:String(e))}finally{await browser.close();report.failures=failures;writeFileSync('quality-qa/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));}
 assert.equal(failures.length,0,failures.join('\n'));
