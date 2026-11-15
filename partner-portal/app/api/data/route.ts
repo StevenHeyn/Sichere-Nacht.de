@@ -26,7 +26,7 @@ export async function GET(request:Request){try{
  if(view==='agency'){await query('roster',db.rpc('vp_roster'));await query('invitations',db.from('vp_invitations').select('id,full_name,email,expires_at,accepted_by,created_at').order('created_at',{ascending:false}).limit(100))}
  if(view==='merch'){await query('products',db.from('vp_merch_products').select('*').eq('active',true));await query('merch_orders',db.from('vp_merch_orders').select('*').order('created_at',{ascending:false}).limit(100))}
  if(view==='d2d'){
- await query('territories',db.from('vp_territories').select('*').order('label'));
+ await query('territories',db.from('vp_territories').select('*').not('street_name','is',null).order('label'));
  const areaId=new URL(request.url).searchParams.get('area'),areas=result.territories as Array<Record<string,unknown>>,area=areas.find(a=>a.id===areaId);
  const scope=(q:any)=>{if(area?.street_name)q=q.ilike('street',String(area.street_name).replace(/[\\%_]/g,'\\$&')).in('postal_code',[area.street_postal_code,'']);return q};
  if(area){const offset=Math.max(0,Math.min(100000,Math.floor(Number(new URL(request.url).searchParams.get('offset'))||0)));await query('addresses',scope(db.from('vp_addresses').select('*')).gte('longitude',Number(area.west)).lte('longitude',Number(area.east)).gte('latitude',Number(area.south)).lte('latitude',Number(area.north)).order('street').order('house_number').order('id').range(offset,offset+199));result.addressOffset=offset;result.areaId=area.id;}

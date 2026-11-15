@@ -8,9 +8,12 @@ export function streetSelection(street:unknown,postalCode:unknown){
 export async function getStreetAddresses(street:unknown,postalCode:unknown){
  const s=streetSelection(street,postalCode),pattern='^'+s.street.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'$';
  const quoted=JSON.stringify(pattern),postcode=JSON.stringify(s.postalCode);
- const query=`[out:json][timeout:25];area["boundary"="postal_code"]["postal_code"=${postcode}]->.zip;(nwr(area.zip)["addr:street"~${quoted},i]["addr:housenumber"];nwr["addr:postcode"=${postcode}]["addr:street"~${quoted},i]["addr:housenumber"];);out center 5001;`;
- const r=await fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(query),{headers:{'User-Agent':'SichereNachtPartnerportal/1.0 (bestellungen@sichere-nacht.de)'},next:{revalidate:86400},signal:AbortSignal.timeout(35000)});
- if(!r.ok)throw new Error('Der Adressdienst ist ausgelastet. Bitte die Straßensuche erneut versuchen.');
+ const query=`[out:json][timeout:15];area["boundary"="postal_code"]["postal_code"=${postcode}]->.zip;nwr(area.zip)["addr:street"~${quoted},i]["addr:housenumber"];out center 5001;`;
+ let r:Response|undefined;
+ for(const endpoint of ['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter']){
+  try{const response=await fetch(endpoint+'?data='+encodeURIComponent(query),{headers:{'User-Agent':'SichereNachtPartnerportal/1.0 (bestellungen@sichere-nacht.de)','Accept':'application/json'},next:{revalidate:86400},signal:AbortSignal.timeout(20000)});if(response.ok){r=response;break}}catch{}
+ }
+ if(!r)throw new Error('Der Adressdienst antwortet derzeit nicht. Bitte die Straßensuche erneut versuchen. Es wurden keine leeren Adressdaten gespeichert.');
  const text=await r.text();if(text.length>12000000)throw new Error('Adressantwort zu groß. Die Straße wurde nicht als vollständig importiert markiert.');
  const data=JSON.parse(text);if(data.remark||!Array.isArray(data.elements))throw new Error('Straßenabfrage abgebrochen. Bitte erneut versuchen.');
  if(data.elements.length>5000)throw new Error('Über 5.000 Adressobjekte. Keine gekürzte Straßenliste übernommen; bitte Administration kontaktieren.');

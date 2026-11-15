@@ -34,7 +34,7 @@ export async function POST(request:Request){try{const d=await body(request,12000
  }
  return json({ok:true,result:selected.data});
  }
- case 'select_area':fn='vp_select_territory';args={p_label:str(d.label,200),p_bbox:d.bbox,p_city:str(d.city,160)};break;
+ case 'select_area':throw new Error('Bitte eine Straße mit Postleitzahl auswählen. Die Umkreissuche wurde entfernt.');
  case 'claim_area':fn='vp_claim_territory';args={p_id:d.id};break;
  case 'claim_address':fn='vp_claim_address';args={p_id:d.id};break;
  case 'qualify':fn='vp_qualify_address';args={p_id:d.id,p_status:d.status,p_households:d.households||null};break;
