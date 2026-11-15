@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/prepare-public-catalog.mjs && next dev",
-    "build": "node scripts/prepare-public-catalog.mjs && node scripts/staging-preflight.mjs && next build",
+    "build": "node scripts/prepare-public-catalog.mjs && node scripts/staging-preflight.mjs && node scripts/live-preflight.mjs && next build",
     "start": "next start"
   },
   "dependencies": {

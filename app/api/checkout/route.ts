@@ -1,3 +1,4 @@
+import {activePortalPartner} from '../../../lib/portal-partner';
 import {NextResponse} from 'next/server';
 import products from '../../../lib/public-products.generated.json';
 import {applyCheckoutBranding} from '../../../lib/stripe-shop';
@@ -35,8 +36,8 @@ export async function POST(request:Request){
  let i=0;for(const [sku,quantity] of cart){const p=priceBySku.get(sku)!;if(!intIn(p.priceCents,1,10000000))return error('Ungeprüfter Artikelpreis.',503);const prefix='line_items['+i+']';form.set(prefix+'[price_data][currency]','eur');form.set(prefix+'[price_data][unit_amount]',String(p.priceCents));form.set(prefix+'[price_data][tax_behavior]','inclusive');form.set(prefix+'[price_data][product_data][name]',p.name.slice(0,240));form.set(prefix+'[price_data][product_data][metadata][sku]',sku);form.set(prefix+'[quantity]',String(quantity));i++}
  form.set('shipping_options[0][shipping_rate_data][type]','fixed_amount');form.set('shipping_options[0][shipping_rate_data][fixed_amount][amount]',String(shipping));form.set('shipping_options[0][shipping_rate_data][fixed_amount][currency]','eur');form.set('shipping_options[0][shipping_rate_data][tax_behavior]','inclusive');form.set('shipping_options[0][shipping_rate_data][display_name]','Standardversand Deutschland');
  const vp=typeof body.vpId==='string'?body.vpId.trim().toUpperCase():'';const consent=parseReferral({...body.referralConsent,vpId:vp});
- const registered=(process.env.VALID_PARTNER_IDS||'').split(',').map(x=>x.trim().toUpperCase()).filter(Boolean);
- if(consent&&registered.includes(vp)){form.set('metadata[vp_id]',vp);form.set('metadata[referral_consent_policy]',consent.policy);form.set('metadata[referral_consent_at]',new Date(consent.consentedAt).toISOString());}
+ let partnerEligible=false;if(consent){try{partnerEligible=await activePortalPartner(vp)}catch{return error('Die Partnerzuordnung konnte nicht geprüft werden. Bitte erneut versuchen.',503)}if(!partnerEligible)return error('Dieser Vertriebspartner ist noch nicht für Verkäufe freigeschaltet.',409);}
+ if(consent&&partnerEligible){form.set('metadata[vp_id]',vp);form.set('metadata[referral_consent_policy]',consent.policy);form.set('metadata[referral_consent_at]',new Date(consent.consentedAt).toISOString());}
  form.set('metadata[shop]','sichere-nacht');form.set('metadata[shipping_country]',country);form.set('metadata[attribution_status]',form.has('metadata[vp_id]')?'registered_consented':'none');
  try{const response=await fetch('https://api.stripe.com/v1/checkout/sessions',{method:'POST',headers:{Authorization:'Bearer '+secret,'content-type':'application/x-www-form-urlencoded','Stripe-Version':'2026-03-25.dahlia'},body:form.toString(),cache:'no-store',signal:AbortSignal.timeout(15000)});const data=await response.json();if(!response.ok||typeof data.client_secret!=='string'){logStripeFailure(response,data);return error('Der Zahlungsdienst ist momentan nicht verfügbar.',502)}return NextResponse.json({client_secret:data.client_secret},{headers:{'cache-control':'no-store'}})}catch{return error('Zahlung konnte nicht vorbereitet werden.',502)}
 }
