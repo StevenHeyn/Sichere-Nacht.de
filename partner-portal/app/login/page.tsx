@@ -10,7 +10,7 @@ export default function Login(){
   if(p.has('reset'))setMode('reset');
   if(p.has('recovery'))setMode('password');
   const i=p.get('invite');
-  if(i&&/^[a-f0-9]{64}$/.test(i)){sessionStorage.setItem('sn-vp-invite',i);setInvite(i);setMode('signup')}
+  if(i&&/^(vp_)?[a-f0-9]{64}$/.test(i)){sessionStorage.setItem('sn-vp-invite',i);setInvite(i);setMode('signup')}
   if(p.has('error')){setIsError(true);setMessage('Der Bestätigungslink ist ungültig, abgelaufen oder wurde in einem anderen Browser geöffnet. Bitte fordere einen neuen Link an und öffne ihn im selben Browser.')}
  },[]);
  useEffect(()=>{if(retryIn<=0)return;const timer=setTimeout(()=>setRetryIn(n=>Math.max(0,n-1)),1000);return()=>clearTimeout(timer)},[retryIn]);
@@ -37,7 +37,7 @@ export default function Login(){
    <p className="eyebrow">SICHERE NACHT · PARTNER</p>
    <h1>{mode==='signup'?'Dein Partnerkonto.':mode==='reset'?'Zugang wiederherstellen.':mode==='password'?'Neues Passwort.':'Willkommen zurück.'}</h1>
    <p>{mode==='reset'?'Gib die E-Mail-Adresse deines bestehenden Kontos ein. Wir senden dir einen Link, mit dem du ein neues Passwort festlegen kannst.':mode==='password'?'Wähle ein neues Passwort mit mindestens 12 Zeichen.':'Melde dich an, um deine Gebiete, Schulungen und Provisionen zu verwalten.'}</p>
-   {invite&&<p className="notice">Du nutzt eine Agentureinladung. Die Zuordnung erfolgt erst nach E-Mail-Bestätigung und eigener Antragstellung.</p>}
+   {invite&&<p className="notice">{invite.startsWith('vp_')?'Du nutzt eine persönliche VP-Einladung. Dein Werber wird beim ersten Partnerantrag zugeordnet.':'Du nutzt eine Agentureinladung.'} Die Zuordnung erfolgt erst nach E-Mail-Bestätigung und eigener Antragstellung.</p>}
   </div>
   <form className="card" onSubmit={submit} aria-busy={busy}>
    {mode!=='password'&&<label>E-Mail-Adresse<input type="email" autoComplete="email" required disabled={busy} value={email} onChange={e=>setEmail(e.target.value)}/></label>}

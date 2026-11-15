@@ -17,6 +17,7 @@ export async function GET(request:Request){try{
  if(privileged)await query('earnings',db.from('vp_earnings').select('*').order('order_at',{ascending:false}).limit(200));
  else {const safe=await db.rpc('vp_own_finance');if(safe.error)throw new Error('Eigene Provisionsdaten konnten nicht geladen werden.');Object.assign(result,safe.data);}await query('reserves',db.from('vp_reserves').select('*'));await query('statements',db.from('vp_statements').select('*').order('period',{ascending:false}).limit(100));if(privileged)await query('finance_lines',db.from('vp_finance_lines').select('*').order('created_at',{ascending:false}).limit(300));await query('reserve_releases',db.from('vp_reserve_releases').select('*').limit(100));
  }
+ if(view==='recruitment')await query('recruitment',db.rpc('vp_recruitment_overview'));
  if(view==='installation')await query('installationJobs',db.rpc('vp_installation_pool'));
  if(view==='training'){await query('salesQuestions',db.rpc('vp_sales_quiz_questions'));await query('installerQuestions',db.rpc('vp_installer_quiz_questions'));await query('installationJobs',db.rpc('vp_installation_pool'));}
  if(view==='training'||view==='overview'){

@@ -13,6 +13,7 @@ export async function POST(request:Request){try{const d=await body(request,12000
  case 'installer_area':{if(account.status!=='active')throw new Error('Aktiver Partnerzugang erforderlich.');const permit=await db.rpc('vp_geo_request');if(permit.error||!permit.data)throw new Error('Bitte einige Sekunden warten.');const postalCode=str(d.postalCode,5),area=await resolvePostalArea(postalCode);fn='vp_save_installer_area';args={p_postal_code:postalCode,p_locality:area.locality,p_latitude:area.latitude,p_longitude:area.longitude,p_radius:Number(d.radius)};break;}
  case 'password':{const password=str(d.password,129);if(password.length<12||password.length>128)throw new Error('Passwort muss 12 bis 128 Zeichen haben.');const {error}=await db.auth.updateUser({password});if(error)throw new Error('Passwortänderung fehlgeschlagen.');return json({ok:true})}
  case 'application':if(d.acceptTerms!==true||!d.profile||typeof d.profile!=='object'||Array.isArray(d.profile))throw new Error('Profil und ausdrückliche Vertragsannahme erforderlich.');fn='vp_submit_application';args={p_profile:{...d.profile,termsAccepted:true},p_terms_id:d.termsId,p_invite_token:str(d.inviteToken,128)||null};break;
+ case 'recruitment_link':fn='vp_recruitment_link';args={};break;
  case 'invite':fn='vp_invite';args={p_name:str(d.name,160),p_email:str(d.email,200)};break;
  case 'book':fn='vp_book_training';args={p_slot:d.slotId,p_cancel:d.cancel===true};break;
  case 'installer':fn='vp_request_installer';args={};break;
