@@ -1,3 +1,4 @@
+import {requestLimit} from '../../../lib/request-limit';
 import {assertBrowserJson,readLimitedText,securityStatus} from '../../../lib/request-security';
 import {NextResponse} from 'next/server';
 export const runtime='nodejs';
@@ -20,6 +21,7 @@ async function sendReceipt(email:string,name:string,reference:string,at:string){
 export async function POST(request:Request){
  const url=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
  if(!url||!key)return json('Die Online-Widerrufsfunktion ist noch nicht eingerichtet. Bitte per E-Mail widerrufen.',503);
+ const limited=await requestLimit(request,'widerruf');if(limited)return limited;
  let data;try{assertBrowserJson(request);data=JSON.parse(await readLimitedText(request,10000))}catch(e){return json('Ungültige oder zu große Anfrage.',securityStatus(e));}
  if(!data||!valid(data.name,160)||!valid(data.reference,240)||typeof data.email!=='string'||data.email.length>200||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim()))return json('Bitte Namen, E-Mail und Bestellangaben prüfen.',400);
  const name=clean(data.name),email=data.email.trim(),reference=clean(data.reference);

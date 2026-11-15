@@ -1,3 +1,4 @@
+import {requestLimit} from '../../../lib/request-limit';
 import {assertBrowserJson,readLimitedText,securityStatus} from '../../../lib/request-security';
 import {createHash} from 'node:crypto';
 import {NextResponse} from 'next/server';
@@ -6,6 +7,7 @@ const send=(data:unknown,status=200)=>NextResponse.json(data,{status,headers:{'c
 export async function POST(request:Request){
  const key=process.env.CONTACT_RESEND_API_KEY||process.env.RESEND_API_KEY,from=process.env.CONTACT_FROM_EMAIL||process.env.ORDER_EMAIL_FROM,to=process.env.CONTACT_TO_EMAIL||process.env.INVOICE_CONTACT_EMAIL;
  if(!key||!from||!to)return send({error:'Das Kontaktformular ist derzeit nicht eingerichtet. Bitte schreibe an bestellungen@sichere-nacht.de.'},503);
+ const limited=await requestLimit(request,'contact');if(limited)return limited;
  let raw:string;try{assertBrowserJson(request);raw=await readLimitedText(request,10000)}catch(e){return send({error:'Ungültige oder zu große Anfrage.'},securityStatus(e))}
  let body;try{body=JSON.parse(raw)}catch{return send({error:'Ungültige Anfrage.'},400)}
  if(body?.website)return send({ok:true});

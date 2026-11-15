@@ -1,3 +1,4 @@
+import {requestLimit} from '../../../lib/request-limit';
 import {assertBrowserJson,readLimitedText,securityStatus} from '../../../lib/request-security';
 import {activePortalPartner} from '../../../lib/portal-partner';
 import {NextResponse} from 'next/server';
@@ -20,6 +21,7 @@ export async function POST(request:Request){
  const base=process.env.NEXT_PUBLIC_SITE_URL;
  if(!enabled||!secret||!base||!process.env.STRIPE_WEBHOOK_SECRET)return error('Der Bezahlvorgang ist noch nicht freigeschaltet. Bitte später erneut versuchen.',503);
  let origin:string;try{origin=new URL(base).origin;if(!origin.startsWith('https://'))throw Error('non-https')}catch{return error('Shop-Adresse noch nicht freigegeben.',503)}
+ const limited=await requestLimit(request,'checkout');if(limited)return limited;
  let raw:string;try{assertBrowserJson(request);raw=await readLimitedText(request,20000)}catch(e){return error('Ungültige oder zu große Anfrage.',securityStatus(e))}
  let body;try{body=JSON.parse(raw)}catch{return error('Ungültiger Warenkorb.',400)}
  if(!body||!Array.isArray(body.items)||body.items.length<1||body.items.length>50)return error('Ungültiger Warenkorb.',400);
