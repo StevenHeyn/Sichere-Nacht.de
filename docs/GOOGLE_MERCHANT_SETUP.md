@@ -18,19 +18,21 @@ This does not assert legal approval or alter payment gates. Previews remain noin
 - RSS feed exports only reviewed, priced, imaged, valid-GTIN products with fresh
   confirmed availability. No fake stock, reviews, delivery dates or identifiers.
 
-## Current blockers before Merchant Center submission
+## Availability confirmed by the merchant
 
-`lib/merchant-availability.json` is intentionally empty: no confirmed stock evidence
-has been supplied. An empty feed is preparation, not a completed Google listing.
-Do not submit the feed until product eligibility and stock are confirmed.
+On 2026-11-15 the merchant confirmed all 901 current catalog SKUs as deliverable
+through the supplier in 2–4 working days. `lib/merchant-availability.json` records
+that explicit SKU list and confirmation timestamp. `lib/availability.ts` treats
+this as manually maintained availability until changed; it is not live inventory.
+New SKUs are not automatically included. Remove a SKU from the confirmed list if
+its delivery promise no longer holds. Timestamped warehouse evidence may still use
+`validUntil` (maximum 24 hours) through the same helper.
 
-A trusted warehouse/supplier integration can replace the JSON adapter. For manual
-confirmation, enter SKU records with `status: "in_stock"`, ISO `confirmedAt` and
-`validUntil`; validity must be at most 24 hours. Only use evidence that the item can
-be fulfilled under the published 2–4 working-day conditions. Product pages and feed
-use the same helper. Other or unknown statuses are omitted, never called out of stock.
-The current adapter requires a deployment to refresh evidence; it is not automatic
-inventory synchronization. Build that integration before sustained feed operation.
+Product pages, category listings and Google feed use the shared availability helper.
+Technical review remains separate: unreviewed products stay inquiry-only, with no
+Offer and no merchant feed item. Stock confirmation does not approve their sale.
+
+## Remaining Merchant Center setup
 
 Set up or access the merchant's own Google Merchant Center account, verify and claim
 `sichere-nacht.de`, configure German shipping (9.90 EUR) and the actual returns policy,

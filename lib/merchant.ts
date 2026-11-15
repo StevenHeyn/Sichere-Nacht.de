@@ -1,17 +1,9 @@
-import availabilityData from './merchant-availability.json';
 import {productAdvice} from './product-advice';
 import {SITE_ORIGIN} from './seo';
 
 export type MerchantProduct={sku:string;name:string;ean?:string;image?:string|null;priceCents:number;category?:string;line?:string};
-// Only confirmed, time-limited supplier/warehouse evidence may be added here.
-// No catalog price or successful payment is evidence of stock.
-export type AvailabilityEvidence={status:'in_stock';confirmedAt:string;validUntil:string};
-export function confirmedAvailability(sku:string,now=Date.now(),data:Record<string,AvailabilityEvidence>=availabilityData){
- const entry=data[sku];
- if(!entry||entry.status!=='in_stock')return null;
- const start=Date.parse(entry.confirmedAt),end=Date.parse(entry.validUntil);
- return Number.isFinite(start)&&Number.isFinite(end)&&start<=now&&end>now&&end>start&&end-start<=86400000?entry:null;
-}
+export {confirmedAvailability} from './availability';
+import {confirmedAvailability,availabilityData,type AvailabilityEvidence} from './availability';
 export function validGtin(value:string|undefined){
  if(!value||! /^(?:\d{8}|\d{12}|\d{13}|\d{14})$/.test(value))return false;
  const digits=[...value].map(Number),check=digits.pop()!;
@@ -23,8 +15,8 @@ export function productImage(image:string|null|undefined){
  if(!image)return undefined;
  try{const url=new URL(image,SITE_ORIGIN);return url.protocol==='https:'?url.href:undefined}catch{return undefined}
 }
-export function productStructuredData(p:MerchantProduct){
- const advice=productAdvice(p),available=confirmedAvailability(p.sku);
+export function productStructuredData(p:MerchantProduct,now=Date.now(),data:Record<string,AvailabilityEvidence>=availabilityData){
+ const advice=productAdvice(p),available=confirmedAvailability(p.sku,now,data);
  return {'@context':'https://schema.org','@type':'Product','@id':productUrl(p.sku)+'#product',name:p.name,sku:p.sku,
  brand:{'@type':'Brand',name:'Ajax'},description:advice.purpose,image:productImage(p.image),url:productUrl(p.sku),
  ...(validGtin(p.ean)?{gtin:p.ean}:{}),
