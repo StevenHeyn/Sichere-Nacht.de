@@ -30,3 +30,15 @@ export function getShopGroup(p:Classifiable):ShopGroup{
  if(/light.?switch|outlet|socket|wall.?switch|air.?quality|lifequality|temperature|relay\b|wallswitch|smart home|steckdose|schalter|strom|licht/.test(n)||/lightswitch|luftqualität/.test(c))return 'smart';
  return 'zubehoer';
 }
+
+export const SHOP_GUIDES:Partial<Record<ShopGroup,string>>={
+ zentralen:'Die Alarmzentrale verbindet die passenden Melder und Bedienteile zu einem System. Vergleiche zuerst Funktechnik, Fotoverifizierung und Kommunikationswege. Für eine Erweiterung ist das genaue Hub-Modell entscheidend; eine Jeweller-Funkzentrale bietet nicht automatisch einen Fibra-Anschluss.',
+ bewegung:'Bewegungsmelder überwachen Räume und Laufwege. Wähle passend zu Innen- oder Außenbereich, Raumaufteilung und Haustieren. Wenn du Fotos zu einem Alarm benötigst, prüfe eine passende MotionCam-Ausführung und eine Zentrale mit Fotoverifizierung. Ein normaler Bewegungsmelder liefert keine Kamerabilder.',
+ oeffnung:'Tür- und Fenstermelder ergänzen die Absicherung der Außenhaut. Ein Öffnungskontakt erkennt das Öffnen; Glasbruch- und Erschütterungserkennung sind zusätzliche, geräteabhängige Funktionen. Plane jede unabhängig zu überwachende Öffnung und prüfe Magnetabstand sowie Montagegeometrie.',
+ sirenen:'Innensirenen und Außensirenen machen einen Alarm hörbar; geeignete Ausführungen ergänzen ihn optisch. Wähle das Gerät nach Einsatzort und kompatiblem Hub. Eine Sirene erkennt selbst keinen Einbruch und ersetzt deshalb keine Melder.',
+ bedienung:'Bedienteile, Handsender und Taster erleichtern die Bedienung der Alarmanlage. Prüfe, ob du Codes, Karten oder Tags benötigst und welche Funktionen die konkrete Ausführung unterstützt. Nicht jedes KeyPad unterstützt berührungslose Zutrittsmedien.',
+ wasser:'Wassermelder erkennen austretendes Wasser an ihren Kontaktstellen, etwa unter Waschmaschine oder Spüle. Ein Melder sperrt die Wasserleitung nicht selbst ab. Für eine automatische Absperrung sind eine passende Ventillösung, Systemplanung und fachgerechte Installation nötig.',
+ video:'Kameras, Videotürklingeln und Rekorder benötigen eine passende Netzwerk- und Stromversorgung. Prüfe Aufnahmeart, Speicher und Zugriffsrechte für deinen Einsatz. Die Fotoverifizierung eines Alarmmelders ist keine kontinuierliche Videoüberwachung.',
+ fibra:'Kabelgebundene Fibra-Geräte benötigen eine passende Zentrale und eine geplante Verkabelung. Unterschiedliche Fachlinien sind nicht pauschal miteinander kompatibel. Lass Zentrale, Versorgung und die konkrete Geräteausführung vor der Bestellung abgleichen.',
+ zubehoer:'Halterungen, Abdeckungen und Ersatzteile müssen zur genauen Geräteausführung passen. Artikelnummer, Gehäusevariante und Lieferumfang sind entscheidend. Ein Zubehörbild zeigt nicht automatisch ein vollständiges Gerät; frage bei unklarer Zuordnung vor der Bestellung nach.'
+};

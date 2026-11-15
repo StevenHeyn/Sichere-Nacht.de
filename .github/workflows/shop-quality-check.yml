@@ -21,7 +21,7 @@ jobs:
       - name: System, consent and Stripe form regression tests
         run: |
           node --experimental-strip-types --test scripts/checkout-form-compat-test.mjs
-          node --test scripts/shop-quality-test.mjs
+          node --test scripts/shop-quality-test.mjs scripts/merchant-test.mjs
       - run: npm run build
       - name: Browser test dependencies (CI only)
         run: npm install --no-save --no-package-lock playwright @axe-core/playwright && npx playwright install --with-deps chromium

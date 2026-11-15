@@ -1,0 +1,19 @@
+import {test,after} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync,mkdirSync,rmSync,copyFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
+import path from 'node:path';
+import ts from 'typescript';
+const dir=path.resolve('.merchant-test-'+process.pid);mkdirSync(dir);
+for(const name of ['merchant','product-advice','seo'])writeFileSync(path.join(dir,name+'.js'),ts.transpileModule(readFileSync('lib/'+name+'.ts','utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,esModuleInterop:true}}).outputText);
+copyFileSync('lib/merchant-availability.json',path.join(dir,'merchant-availability.json'));
+const require=createRequire(path.join(dir,'run.cjs'));const m=require('./merchant.js');after(()=>rmSync(dir,{recursive:true,force:true}));
+const p={sku:'38245.40.WH1',name:'Ajax Hub 2 Plus <white> & white',priceCents:69990,image:'/ajax-images/38245.40.WH1.webp',ean:'4823114015144'};
+const now=Date.now(),evidence={status:'in_stock',confirmedAt:new Date(now-1000).toISOString(),validUntil:new Date(now+3600000).toISOString()},data={[p.sku]:evidence};
+test('unknown stock is excluded, never guessed from a purchasable price',()=>{assert.deepEqual(m.merchantExclusions(p,now,{}),['confirmed_availability_missing']);assert.doesNotMatch(m.merchantFeed([p],now,{}),/<item>/);assert.equal(m.productStructuredData(p).offers.availability,undefined)});
+test('fresh evidence expires and invalid/future evidence fails closed',()=>{assert.ok(m.confirmedAvailability(p.sku,now,data));for(const e of [{...evidence,validUntil:new Date(now).toISOString()},{...evidence,confirmedAt:new Date(now+1000).toISOString()},{...evidence,validUntil:'invalid'},{...evidence,validUntil:new Date(now+2*86400000).toISOString()},{...evidence,status:'pending'}])assert.equal(m.confirmedAvailability(p.sku,now,{[p.sku]:e}),null)});
+test('feed matches product price and escapes XML',()=>{const feed=m.merchantFeed([p],now,data);assert.match(feed,/<g:price>699.90 EUR<\/g:price>/);assert.match(feed,/&lt;white&gt; &amp; white/);assert.match(feed,/<g:availability>in_stock/);assert.match(feed,/<g:country>DE/);assert.equal(m.productStructuredData(p).offers.price,'699.90')});
+test('invalid GTIN, missing image, unreviewed item and zero price excluded',()=>{for(const bad of [{...p,ean:'4823114015145'},{...p,image:''},{...p,sku:'UNKNOWN'},{...p,priceCents:0}])assert.doesNotMatch(m.merchantFeed([bad],now,{[bad.sku]:evidence}),/<item>/);assert.equal(m.productStructuredData({...p,sku:'UNKNOWN'}).offers,undefined)});
+test('structured data uses valid GTIN and correct absolute image URL',()=>{assert.equal(m.productStructuredData(p).gtin,p.ean);assert.equal(m.productImage('https://sichere-nacht.de/p.webp'),'https://sichere-nacht.de/p.webp');assert.equal(m.productImage('javascript:bad'),undefined)});
+
+test('indexing is independently approved and previews stay closed',()=>{const {publicIndexing}=require('./seo.js');const keys=['VERCEL_ENV','SEO_INDEXING_APPROVED','SITE_LIVE_APPROVED'];const original=Object.fromEntries(keys.map(k=>[k,process.env[k]]));try{process.env.VERCEL_ENV='production';process.env.SEO_INDEXING_APPROVED='true';process.env.SITE_LIVE_APPROVED='false';assert.equal(publicIndexing(),true);process.env.VERCEL_ENV='preview';assert.equal(publicIndexing(),false);process.env.VERCEL_ENV='production';process.env.SEO_INDEXING_APPROVED='false';assert.equal(publicIndexing(),false)}finally{for(const k of keys)if(original[k]===undefined)delete process.env[k];else process.env[k]=original[k]}});
