@@ -1,3 +1,4 @@
+import {readLimitedText,securityStatus} from '../../../../lib/request-security';
 import {createHmac,timingSafeEqual} from 'node:crypto';
 import {NextResponse} from 'next/server';
 import {ordersConfigured,savePaidOrder,type StoredOrder} from '../../../../lib/orders';
@@ -11,7 +12,7 @@ type StripeAddress=Record<string,unknown>;
 type StripeSession={id:string;object:string;mode:string;status:string;payment_status:string;livemode:boolean;amount_total:number;amount_subtotal?:number|null;total_details?:{amount_tax?:number|null};currency:string;payment_intent?:string|null;customer_details?:{email?:string|null;name?:string|null;address?:StripeAddress|null};collected_information?:{shipping_details?:{name?:string|null;address?:StripeAddress|null}};shipping_details?:{name?:string|null;address?:StripeAddress|null};shipping_cost?:{amount_total?:number};metadata?:Record<string,string>};
 type StripeLine={description?:string;quantity?:number;amount_total?:number;price?:{product?:{metadata?:{sku?:string}}}};
 function validSignature(payload:string,header:string,secret:string){const segments=header.split(',').map(x=>x.trim().split('=',2)),t=segments.find(([k])=>k==='t')?.[1],v=segments.filter(([k])=>k==='v1').map(([,h])=>h);if(!t||!/^\d+$/.test(t)||v.length===0)return false;const when=Number(t);if(!Number.isSafeInteger(when)||Math.abs(Date.now()/1000-when)>300)return false;const expected=createHmac('sha256',secret).update(t+'.'+payload).digest();return v.some(hex=>/^[0-9a-f]{64}$/i.test(hex)&&timingSafeEqual(expected,Buffer.from(hex,'hex')))}
-async function stripeGet<T>(endpoint:string):Promise<T>{const key=process.env.STRIPE_SECRET_KEY;if(!key)throw new Error('Stripe API nicht konfiguriert');const result=await fetch('https://api.stripe.com/v1/'+endpoint,{headers:{Authorization:'Bearer '+key,'Stripe-Version':'2026-03-25.dahlia'},cache:'no-store'});if(!result.ok)throw new Error('Stripe API Status '+result.status);return result.json() as Promise<T>}
+async function stripeGet<T>(endpoint:string):Promise<T>{const key=process.env.STRIPE_SECRET_KEY;if(!key)throw new Error('Stripe API nicht konfiguriert');const result=await fetch('https://api.stripe.com/v1/'+endpoint,{headers:{Authorization:'Bearer '+key,'Stripe-Version':'2026-03-25.dahlia'},cache:'no-store',signal:AbortSignal.timeout(15000)});if(!result.ok)throw new Error('Stripe API Status '+result.status);return result.json() as Promise<T>}
 async function verifiedPaidOrder(event:StripeEvent,sessionId:string):Promise<StoredOrder|null|'ignored'>{
  const session=await stripeGet<StripeSession>('checkout/sessions/'+encodeURIComponent(sessionId));
  if(session.id!==sessionId||session.object!=='checkout.session'||session.mode!=='payment')throw new Error('Stripe Session ungültig');
@@ -32,8 +33,8 @@ async function verifiedPaidOrder(event:StripeEvent,sessionId:string):Promise<Sto
 }
 export async function POST(request:Request){
  const webhookSecret=process.env.STRIPE_WEBHOOK_SECRET;if(!webhookSecret)return NextResponse.json({error:'Webhook nicht konfiguriert'},{status:503});
- const signature=request.headers.get('stripe-signature');if(!signature)return NextResponse.json({error:'Signatur fehlt'},{status:400});
- let raw:string;try{raw=await request.text()}catch{return NextResponse.json({error:'Ungültiger Body'},{status:400})}
+ const signature=request.headers.get('stripe-signature');if(!signature||signature.length>8192)return NextResponse.json({error:'Signatur fehlt'},{status:400});
+ let raw:string;try{raw=await readLimitedText(request,1048576)}catch(e){return NextResponse.json({error:'Ungültiger Body'},{status:securityStatus(e)})}
  if(!validSignature(raw,signature,webhookSecret))return NextResponse.json({error:'Ungültige Signatur'},{status:400});
  let event:StripeEvent;try{event=JSON.parse(raw) as StripeEvent}catch{return NextResponse.json({error:'Ungültiges JSON'},{status:400})}
  if(!event||typeof event.id!=='string'||!event.id||typeof event.type!=='string'||!event.type)return NextResponse.json({error:'Unvollständiges Event'},{status:400});

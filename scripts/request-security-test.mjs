@@ -1,0 +1,9 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import vm from 'node:vm';import ts from 'typescript';
+const code=ts.transpileModule(readFileSync('lib/request-security.ts','utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;const exports={};vm.runInNewContext(code,{exports,URL,TextDecoder,Uint8Array,setTimeout,clearTimeout});const {assertBrowserJson,readLimitedText}=exports;
+function req(body,headers={}){return new Request('https://sichere-nacht.de/api/contact',{method:'POST',body,headers:{'content-type':'application/json',...headers},duplex:'half'})}
+test('same-origin JSON accepted, foreign and opaque origins rejected',()=>{assert.doesNotThrow(()=>assertBrowserJson(req('{}',{origin:'https://sichere-nacht.de'})));for(const headers of [{origin:'https://attacker.example'},{origin:'null'},{'sec-fetch-site':'cross-site'},{'content-type':'text/plain'}])assert.throws(()=>assertBrowserJson(req('{}',headers)))});
+test('UTF8 byte limit applies without content length',async()=>{assert.equal(await readLimitedText(req('ä'),2),'ä');await assert.rejects(readLimitedText(req('ää'),3),e=>e.status===413)});
+test('chunked stream cannot bypass size limit and is canceled',async()=>{let canceled=false;const stream=new ReadableStream({pull(c){c.enqueue(new Uint8Array(10))},cancel(){canceled=true}});await assert.rejects(readLimitedText(req(stream),25),e=>e.status===413);assert.ok(canceled)});
+test('oversized declared length rejected before reading',async()=>{await assert.rejects(readLimitedText(req('{}',{'content-length':'99999'}),10),e=>e.status===413)});
+test('stalled input times out',async()=>{const stream=new ReadableStream({start(){}});await assert.rejects(readLimitedText(req(stream),10,10),e=>e.status===408)});
+test('webhook raw text preserved exactly',async()=>{const raw=' {"event":"ä"}\n';assert.equal(await readLimitedText(req(raw),100),raw)});
