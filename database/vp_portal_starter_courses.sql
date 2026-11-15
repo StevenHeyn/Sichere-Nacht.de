@@ -21,7 +21,7 @@ select v.title,v.body,false,true from (values
 5. Den konkreten Kontaktwunsch, die erteilte Datenschutzinformation und eine sachlich passende Prüf-/Löschfrist dokumentieren. Telefon- und E-Mail-Freigaben nur bei tatsächlich vorliegendem, dokumentiertem Kontaktwunsch setzen. Frühere Angaben eines anderen Kontakts niemals übernehmen. Keine sensiblen Informationen oder Ausweiskopien zu Bewohnern hinterlegen.
 
 6. Fehlzuordnungen, unberechtigte Zugriffe und widersprüchliche Sperren an die Administration melden. Das Portal erteilt keine Zutrittsrechte und ersetzt keine freigegebenen Einsatz- und Datenschutzhinweise.$body$),
-('Provisionen, Agenturzuordnung und Werbemittel', $body$Die im Portal vorbereitete Provisionsstruktur beträgt 15 % für direkte Vertriebspartner und insgesamt 20 % auf Agenturebene. Bei einem Agentur-VP sind dessen 15 Prozentpunkte in den 20 % enthalten. Die Agentur erhält die Abrechnung und übernimmt die Weiterabrechnung an ihre VP.
+('Provisionen, Agenturzuordnung und Werbemittel', $body$Deine Verkaufsprovision als Vertriebspartner beträgt 15 % des freigegebenen provisionsfähigen Nettowarenumsatzes, ohne Versand und Montage. Wenn du einer Agentur zugeordnet bist, erfolgt die Abrechnung deiner Provision über deine Agentur. Maßgeblich ist deine vereinbarte Vertragsfassung.
 
 Rechenbeispiel: 1.000 € freigegebener Nettowarenumsatz ergeben für einen direkten VP 150 € Provision. Bei der vorgesehenen Reserve von 5 % der Provision werden 7,50 € zurückbehalten und 142,50 € verbleiben vor einer gegebenenfalls gesonderten Umsatzsteuerbehandlung. Die Reserve wächst höchstens bis 2.500 €. Maßgeblich bleibt die tatsächlich vereinbarte Vertragsfassung.
 
