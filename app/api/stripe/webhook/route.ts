@@ -6,6 +6,7 @@ import {dispatchOrderMail} from '../../../../lib/order-notifications';
 import {isSichereNachtCheckout} from '../../../../lib/stripe-shop';
 import {stripeShipping} from '../../../../lib/stripe-shipping';
 import {buyerFromStripeMetadata} from '../../../../lib/buyer-policy';
+import {handleMerchWebhook} from '../../../../lib/merch-payments';
 export const runtime='nodejs';
 type StripeEvent={id?:string;type?:string;livemode?:boolean;data?:{object?:{id?:string;object?:string;mode?:string;payment_status?:string;metadata?:Record<string,string>}}};
 type StripeAddress=Record<string,unknown>;
@@ -38,8 +39,10 @@ export async function POST(request:Request){
  if(!validSignature(raw,signature,webhookSecret))return NextResponse.json({error:'Ungültige Signatur'},{status:400});
  let event:StripeEvent;try{event=JSON.parse(raw) as StripeEvent}catch{return NextResponse.json({error:'Ungültiges JSON'},{status:400})}
  if(!event||typeof event.id!=='string'||!event.id||typeof event.type!=='string'||!event.type)return NextResponse.json({error:'Unvollständiges Event'},{status:400});
- if(event.type!=='checkout.session.completed'&&event.type!=='checkout.session.async_payment_succeeded')return NextResponse.json({received:true,ignored:true});
+ if(!['checkout.session.completed','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed','checkout.session.expired'].includes(event.type))return NextResponse.json({received:true,ignored:true});
  const object=event.data?.object;if(object?.object!=='checkout.session'||!object.id)return NextResponse.json({error:'Ungültiges Session-Event'},{status:400});
+ try{const merch=await handleMerchWebhook(event);if(merch)return NextResponse.json(merch)}catch{console.error('Werbemittel-Zahlungsabgleich fehlgeschlagen',event.id);return NextResponse.json({error:'Zahlungsabgleich ausstehend'},{status:503})}
+ if(event.type!=='checkout.session.completed'&&event.type!=='checkout.session.async_payment_succeeded')return NextResponse.json({received:true,ignored:true});
  if(!isSichereNachtCheckout(object))return NextResponse.json({received:true,ignored:true});
  if(!ordersConfigured()){console.error('Webhook empfangen, Bestelldatenbank fehlt',event.id);return NextResponse.json({error:'Bestelldatenbank noch nicht eingerichtet'},{status:503})}
  try{const order=await verifiedPaidOrder(event,object.id);if(order==='ignored')return NextResponse.json({received:true,ignored:true});if(!order)return NextResponse.json({received:true,payment_pending:true});await savePaidOrder(order);try{await dispatchOrderMail(order.stripe_session_id,'confirmation')}catch(err){console.error('Bestätigung vorgemerkt, E-Mail-Versand ausstehend',err instanceof Error?err.message:'Unbekannt')}console.info('Stripe-Bestellung gespeichert',{sessionId:order.stripe_session_id,eventId:event.id});return NextResponse.json({received:true,stored:true})}catch(e){console.error('Stripe-Webhookspeicherung fehlgeschlagen',e instanceof Error?e.message:'Unbekannt');return NextResponse.json({error:'Bestellung konnte nicht gespeichert werden'},{status:503})}
