@@ -17,7 +17,7 @@ export default function Login(){
  function changeMode(next:string){setMode(next);setMessage('');setIsError(false);setPassword('')}
  async function submit(e:React.FormEvent){
   e.preventDefault();
-  if(busy||(mode==='reset'&&retryIn>0))return;
+  if(busy||((mode==='reset'||mode==='resend_confirmation')&&retryIn>0))return;
   setBusy(true);setMessage('');setIsError(false);
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);
   try{
@@ -26,31 +26,32 @@ export default function Login(){
    if(!r.ok)throw new Error(d.error||'Anfrage fehlgeschlagen. Bitte versuche es erneut.');
    if(mode==='login'||mode==='password'){location.href='/portal';return}
    setMessage(d.message);setPassword('');
-   if(mode==='reset')setRetryIn(60);
+   if(mode==='reset'||mode==='resend_confirmation')setRetryIn(60);
   }catch(e){
    setIsError(true);
-   setMessage(controller.signal.aborted?(mode==='reset'||mode==='signup'?'Die Anfrage dauert zu lange. Bitte prüfe zuerst dein Postfach; die E-Mail könnte bereits versendet worden sein.':'Die Anfrage dauert zu lange. Bitte prüfe deine Verbindung und versuche es erneut.'):e instanceof Error?e.message:'Anfrage fehlgeschlagen. Bitte versuche es erneut.');
+   setMessage(controller.signal.aborted?(mode==='reset'||mode==='signup'||mode==='resend_confirmation'?'Die Anfrage dauert zu lange. Bitte prüfe zuerst dein Postfach; die E-Mail könnte bereits versendet worden sein.':'Die Anfrage dauert zu lange. Bitte prüfe deine Verbindung und versuche es erneut.'):e instanceof Error?e.message:'Anfrage fehlgeschlagen. Bitte versuche es erneut.');
   }finally{clearTimeout(timer);setBusy(false)}
  }
  return <main className="authPage">
   <div>
    <p className="eyebrow">SICHERE NACHT · PARTNER</p>
-   <h1>{mode==='signup'?'Dein Partnerkonto.':mode==='reset'?'Zugang wiederherstellen.':mode==='password'?'Neues Passwort.':'Willkommen zurück.'}</h1>
-   <p>{mode==='reset'?'Gib die E-Mail-Adresse deines bestehenden Kontos ein. Wir senden dir einen Link, mit dem du ein neues Passwort festlegen kannst.':mode==='password'?'Wähle ein neues Passwort mit mindestens 12 Zeichen.':'Melde dich an, um deine Gebiete, Schulungen und Provisionen zu verwalten.'}</p>
+   <h1>{mode==='signup'?'Dein Partnerkonto.':mode==='resend_confirmation'?'E-Mail bestätigen.':mode==='reset'?'Zugang wiederherstellen.':mode==='password'?'Neues Passwort.':'Willkommen zurück.'}</h1>
+   <p>{mode==='resend_confirmation'?'Fordere einen neuen Bestätigungslink für dein bestehendes Partnerkonto an.':'Gib die E-Mail-Adresse deines bestehenden Kontos ein. Wir senden dir einen Link, mit dem du ein neues Passwort festlegen kannst.':mode==='password'?'Wähle ein neues Passwort mit mindestens 12 Zeichen.':'Melde dich an, um deine Gebiete, Schulungen und Provisionen zu verwalten.'}</p>
    {invite&&<p className="notice">{invite.startsWith('vp_')?'Du nutzt eine persönliche VP-Einladung. Dein Werber wird beim ersten Partnerantrag zugeordnet.':'Du nutzt eine Agentureinladung.'} Die Zuordnung erfolgt erst nach E-Mail-Bestätigung und eigener Antragstellung.</p>}
   </div>
   <form className="card" onSubmit={submit} aria-busy={busy}>
    {mode!=='password'&&<label>E-Mail-Adresse<input type="email" autoComplete="email" required disabled={busy} value={email} onChange={e=>setEmail(e.target.value)}/></label>}
-   {mode!=='reset'&&<label>Passwort<input type="password" required disabled={busy} minLength={mode==='login'?1:12} maxLength={128} autoComplete={mode==='login'?'current-password':'new-password'} value={password} onChange={e=>setPassword(e.target.value)}/></label>}
+   {mode!=='reset'&&mode!=='resend_confirmation'&&<label>Passwort<input type="password" required disabled={busy} minLength={mode==='login'?1:12} maxLength={128} autoComplete={mode==='login'?'current-password':'new-password'} value={password} onChange={e=>setPassword(e.target.value)}/></label>}
    {mode==='signup'&&<>
     <label className="check"><input type="checkbox" checked={privacy} onChange={e=>setPrivacy(e.target.checked)} required disabled={busy}/>Ich habe die <Link href="/datenschutz">Hinweise zum Partnerkonto</Link> gelesen.</label>
     <p className="muted">Anschließend: persönliche Angaben, Portrait, Gewerbenachweis und VP-Vertragsannahme. Das Konto allein berechtigt noch nicht zum Vertrieb.</p>
    </>}
-   <button className="button full" disabled={busy||(mode==='reset'&&retryIn>0)}>{busy?'Bitte warten …':mode==='signup'?'Konto erstellen':mode==='reset'?(retryIn>0?`Erneut anfordern in ${retryIn} s`:'Rücksetzlink anfordern'):mode==='password'?'Passwort speichern':'Sicher anmelden'}</button>
+   <button className="button full" disabled={busy||(mode==='reset'&&retryIn>0)}>{busy?'Bitte warten …':mode==='signup'?'Konto erstellen':mode==='resend_confirmation'?(retryIn>0?`Erneut anfordern in ${retryIn} s`:'Bestätigungslink erneut senden'):mode==='reset'?(retryIn>0?`Erneut anfordern in ${retryIn} s`:'Rücksetzlink anfordern'):mode==='password'?'Passwort speichern':'Sicher anmelden'}</button>
    {message&&<p className="notice" role={isError?'alert':'status'}>{message}</p>}
    {mode==='reset'&&<p className="muted">Öffne den neuesten E-Mail-Link im selben Browser. Mehrfaches Anfordern kann das Versandlimit erreichen.</p>}
    <div className="row">
     <button className="textButton" type="button" disabled={busy} onClick={()=>changeMode(mode==='login'?'signup':'login')}>{mode==='login'?'Noch kein Konto?':'Zur Anmeldung'}</button>
+    {mode!=='resend_confirmation'&&<button className="textButton" type="button" disabled={busy} onClick={()=>changeMode('resend_confirmation')}>Bestätigungs-E-Mail erneut senden</button>}
     {mode!=='reset'&&<button className="textButton" type="button" disabled={busy} onClick={()=>changeMode('reset')}>Passwort vergessen</button>}
    </div>
   </form>
