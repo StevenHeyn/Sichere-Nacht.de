@@ -41,7 +41,7 @@ export default function Login(){
   <div>
    <p className="eyebrow">SICHERE NACHT · PARTNER</p>
    <h1>{mode==='signup'?'Dein Partnerkonto.':mode==='resend_confirmation'?'E-Mail bestätigen.':mode==='reset'?'Zugang wiederherstellen.':mode==='password'?'Neues Passwort.':'Willkommen zurück.'}</h1>
-   <p>{mode==='signup'?'Erstelle dein Konto und bestätige anschließend deine E-Mail-Adresse. Danach vervollständigst du deinen Partnerantrag.':mode==='resend_confirmation'?'Fordere einen neuen Bestätigungslink für dein bestehendes Partnerkonto an.':mode==='reset'?'Gib die E-Mail-Adresse deines bestehenden Kontos ein. Wir senden dir einen Link, mit dem du ein neues Passwort festlegen kannst.mode==='password'?'Wähle ein neues Passwort mit mindestens 12 Zeichen.':'Melde dich an, um deine Gebiete, Schulungen und Provisionen zu verwalten.'}</p>
+   <p>{mode==='signup'?'Erstelle dein Konto und bestätige anschließend deine E-Mail-Adresse. Danach vervollständigst du deinen Partnerantrag.':mode==='resend_confirmation'?'Fordere einen neuen Bestätigungslink für dein bestehendes Partnerkonto an.':mode==='reset'?'Gib die E-Mail-Adresse deines bestehenden Kontos ein. Wir senden dir einen Link, mit dem du ein neues Passwort festlegen kannst.':mode==='password'?'Wähle ein neues Passwort mit mindestens 12 Zeichen.':'Melde dich an, um deine Gebiete, Schulungen und Provisionen zu verwalten.'}</p>
    {invite&&<p className="notice">{invite.startsWith('vp_')?'Du nutzt eine persönliche VP-Einladung. Dein Werber wird beim ersten Partnerantrag zugeordnet.':'Du nutzt eine Agentureinladung.'} Die Zuordnung erfolgt erst nach E-Mail-Bestätigung und eigener Antragstellung.</p>}
   </div>
   <form className="card" onSubmit={submit} aria-busy={busy}>
