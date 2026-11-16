@@ -21,7 +21,7 @@ export async function GET(request:Request){try{
  const overlays=edits.data||[];
  if(!snapshot)return json({snapshot:null,points:overlays.slice(0,1500),clusters:[],truncated:overlays.length>1500,message:'Deutschland-Bestand wird vorbereitet. Bereits gespeicherte Adressen bleiben verfügbar.'});
  const keys=tileKeys(b);
- if(zoom<14||keys.length>12){const summary=await catalogFile(snapshot.id,'summary.json.gz');return json({snapshot,points:overlays.slice(0,500),clusters:clustersFor(summary,b,zoom),truncated:overlays.length>500,message:'Zum Bearbeiten näher heranzoomen oder einen Ort suchen.'})}
+ if(zoom<14||keys.length>12||overlays.length>2000){const summary=await catalogFile(snapshot.id,'summary.json.gz');return json({snapshot,points:overlays.slice(0,500),clusters:clustersFor(summary,b,zoom),truncated:overlays.length>500,message:overlays.length>2000?'Zu viele Bearbeitungsstände in diesem Ausschnitt. Bitte näher heranzoomen.':'Zum Bearbeiten näher heranzoomen oder einen Ort suchen.'})}
  const summary=await catalogFile(snapshot.id,'summary.json.gz'),available=new Set(summary.map((p:any)=>p.x+'/'+p.y));
  const blocks=await Promise.all(keys.filter((k:any)=>available.has(k.x+'/'+k.y)).map((k:any)=>catalogFile(snapshot.id,`tiles/${k.x}/${k.y}.json.gz`)));
  const base=blocks.flatMap((rows:any[])=>rows.map(decodePoint).filter((p:any)=>inBounds(p,b)));
