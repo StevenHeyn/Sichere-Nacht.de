@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Temporary, token-authorized verification hook. Never part of the deployed portal.
  * Inject into the catalog Edge Function only for the acceptance check, then restore
  * the original function and revoke the temporary import token. No emails are sent.
