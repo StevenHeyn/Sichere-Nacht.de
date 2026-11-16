@@ -7,17 +7,28 @@ export async function POST(request:Request){try{const d=await body(request),db=a
  if(action==='signup'){
  if(d.website)return json({ok:true,message:'Bitte prüfe dein E-Mail-Postfach.'});
  if(password.length<12||password.length>128||d.accountPrivacyAccepted!==true)throw new Error('Mindestens 12 Zeichen Passwort und Kenntnisnahme der Kontodatenschutzhinweise erforderlich.');
- const {error}=await db.auth.signUp({email,password,options:{emailRedirectTo:new URL('/auth/callback',request.url).href}});if(error){console.error('[vp-signup] Supabase Auth signUp failed',{code:error.code,status:error.status});return json({error:'Die Registrierung konnte nicht vollständig abgeschlossen werden. Möglicherweise wurde das Konto bereits angelegt. Bitte registriere dich nicht erneut. Prüfe dein Postfach und nutze bei Bedarf „Passwort vergessen“. Falls keine E-Mail ankommt, wende dich an den Support.'},503);}
- return json({ok:true,message:'Bitte bestätige deine E-Mail. Das technische Konto ist noch keine freigeschaltete Vertriebspartnerschaft.'});
+ const {error}=await db.auth.signUp({email,password,options:{emailRedirectTo:new URL('/auth/callback',request.url).href}});
+ if(error){
+ console.error('[vp-signup] Supabase Auth signUp failed',{code:error.code,status:error.status});
+ if(error.status===429||error.code==='over_email_send_rate_limit'||error.code==='over_request_rate_limit'){
+ const seconds=error.message?.match(/after (\d+) seconds/i);
+ const retryAfterSeconds=seconds?Math.min(3600,Math.max(60,Number(seconds[1]))):60;
+ return json({error:'Bitte warte kurz, bevor du es erneut versuchst. Es wurde kein neuer Bestätigungslink versendet. Falls du dich gerade registriert hast, prüfe zuerst dein Postfach und den Spamordner. Öffne den neuesten Link im selben Browser. Eine erneute Registrierung ist dann nicht nötig.',retryAfterSeconds},429);
+ }
+ if(error.code==='weak_password')return json({error:'Bitte wähle ein stärkeres Passwort mit mindestens 12 Zeichen.'},400);
+ if(error.code==='user_already_exists')return json({error:'Bitte nutze die Anmeldung oder „Passwort vergessen“, falls du bereits ein Konto hast.'},400);
+ return json({error:'Die Registrierung konnte gerade nicht abgeschlossen werden. Bitte versuche es später erneut. Wenn das Problem bleibt, nutze den Support-Link unten auf der Seite.'},503);
+ }
+ return json({ok:true,message:'Bitte prüfe dein E-Mail-Postfach und den Spamordner. Öffne den neuesten Bestätigungslink im selben Browser, in dem du dich registriert hast. Danach kannst du deinen Partnerantrag ausfüllen. Du musst das Konto nicht erneut erstellen.',retryAfterSeconds:60});
  }
  if(action==='resend_confirmation'){
  const {error}=await db.auth.resend({type:'signup',email,options:{emailRedirectTo:new URL('/auth/callback',request.url).href}});
  if(error){
  console.error('[vp-resend-confirmation] Supabase Auth resend failed',{code:error.code,status:error.status});
- if(error.status===429||error.code==='over_email_send_rate_limit'||error.code==='over_request_rate_limit')return json({error:'Das Versandlimit ist erreicht. Bitte warte vor einem erneuten Versuch.'},429);
+ if(error.status===429||error.code==='over_email_send_rate_limit'||error.code==='over_request_rate_limit')return json({error:'Das Versandlimit ist erreicht. Es wurde kein neuer Link versendet. Bitte prüfe dein Postfach und den Spamordner, bevor du es später erneut versuchst.',retryAfterSeconds:60},429);
  return json({error:'Die Bestätigungs-E-Mail konnte derzeit nicht angefordert werden. Bitte versuche es später erneut.'},503);
  }
- return json({ok:true,message:'Falls die Adresse zu einem noch unbestätigten Konto gehört, wird eine neue Bestätigungs-E-Mail versendet. Bitte prüfe auch den Spamordner.'});
+ return json({ok:true,message:'Falls die Adresse zu einem noch unbestätigten Konto gehört, wird eine neue Bestätigungs-E-Mail versendet. Bitte prüfe auch den Spamordner und öffne den neuesten Link im selben Browser.',retryAfterSeconds:60});
  }
  if(action==='login'){if(!password||password.length>128)throw new Error('Zugangsdaten prüfen.');const {error}=await db.auth.signInWithPassword({email,password});if(error)throw new Error('Anmeldung fehlgeschlagen. Bitte Zugangsdaten und E-Mail-Bestätigung prüfen.');return json({ok:true})}
  if(action==='reset'){
