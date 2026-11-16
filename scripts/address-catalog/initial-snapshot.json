@@ -1,0 +1,24 @@
+{
+  "snapshot": "de-osm-20261114",
+  "created_at": "2026-11-16T00:42:28.680171+00:00",
+  "source": "https://download.geofabrik.de/europe/germany.html",
+  "license": "https://www.openstreetmap.org/copyright",
+  "attribution": "© OpenStreetMap contributors, ODbL 1.0; extract by Geofabrik",
+  "format": "Rows: [source_key, street_or_place, house_number, city, postal_code, longitude, latitude]. WebMercator tiles at zoom 12. Gzip JSON.",
+  "coverage": "Available addressed OSM nodes, ways and multipolygon relations from the Germany extract. No guarantee of complete real-world addresses. Missing house numbers/street-or-place and invalid geometry are excluded. No inferred resident or household data.",
+  "counts": {
+    "node": 4043220,
+    "total": 20806455,
+    "outside_de": 28015,
+    "missing_address_fields": 22863,
+    "way": 16748742,
+    "relation": 14493
+  },
+  "tile_zoom": 12,
+  "bytes": 337986750,
+  "source_md5": "3232aa5b77760c05743f0e0f8424b4f7",
+  "source_bytes": 4883371314,
+  "source_at": "2026-11-14T21:20:41Z",
+  "file_count": 9908,
+  "upload_status": "pending verification and activation"
+}

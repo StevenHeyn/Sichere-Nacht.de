@@ -1,5 +1,5 @@
 """Resumable verified upload. Token file is private, scoped, short-lived; never logged."""
-import concurrent.futures, hashlib, json, pathlib, sys, threading, time, urllib.parse
+import concurrent.futures, hashlib, json, os, pathlib, sys, threading, time, urllib.parse
 import requests
 root, token_file, project = sys.argv[1:]
 root=pathlib.Path(root); manifest=json.loads((root/'manifest.json').read_text()); snapshot=manifest['snapshot'];token=pathlib.Path(token_file).read_text().strip()
@@ -24,5 +24,5 @@ def upload(f):
   except Exception as e:
    if attempt==4:raise RuntimeError(f['path']+': '+str(e))
    time.sleep(min(2**attempt,8))
-with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:list(executor.map(upload,files))
+with concurrent.futures.ThreadPoolExecutor(max_workers=max(1,min(64,int(os.environ.get("CATALOG_UPLOAD_WORKERS","16"))))) as executor:list(executor.map(upload,files))
 print(json.dumps({'complete':True,'verified':len(done),'snapshot':snapshot,'addresses':manifest['counts']['total'],'bytes':manifest['bytes']}),flush=True)
