@@ -15,7 +15,7 @@ export type Action=(action:string,data?:Row)=>Promise<any>;
 export const eur=(c:number=0)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(c/100);
 export const when=(s?:string|null)=>s?new Date(s).toLocaleString('de-DE',{timeZone:'Europe/Berlin'}):'Noch nicht';
 export default function Portal(){const [view,setView]=useState('overview'),[data,setData]=useState<Row|null>(null),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[query,setQuery]=useState('');
- useEffect(()=>{if(new URLSearchParams(location.search).get('view')==='merch')setView('merch')},[]);
+ useEffect(()=>{{const initial=new URLSearchParams(location.search).get('view');if(initial==='merch'||initial==='d2d')setView(initial)}},[]);
  async function load(v=view,q=query){const r=await fetch('/api/data?view='+v+q,{cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'Portal nicht erreichbar');setData(d);}
  useEffect(()=>{let alive=true;fetch('/api/data?view='+view+query,{cache:'no-store'}).then(async r=>{const d=await r.json();if(!r.ok)throw new Error(d.error||'Portal nicht erreichbar');if(alive)setData(d)}).catch(e=>{if(alive)setMessage(e.message)});return()=>{alive=false}},[view,query]);
  const act:Action=async(action,fields={})=>{if(busy)throw new Error('Bitte laufende Aktion abwarten.');setBusy(true);setMessage('');try{const r=await fetch('/api/command',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,...fields})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Aktion fehlgeschlagen');await load();setMessage('Gespeichert.');return d.result}catch(e){setMessage(e instanceof Error?e.message:'Aktion fehlgeschlagen');throw e}finally{setBusy(false)}};

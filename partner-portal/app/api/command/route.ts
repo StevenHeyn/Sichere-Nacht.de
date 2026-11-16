@@ -1,4 +1,3 @@
-import {getStreetAddresses,OSM_SOURCE} from '../../../lib/street-addresses';
 import {resolvePostalArea} from '../../../lib/postal-area';
 import {body,member,json,failure} from '../../../lib/server';
 export const dynamic='force-dynamic';export const maxDuration=60;
@@ -20,23 +19,12 @@ export async function POST(request:Request){try{const d=await body(request,12000
  case 'installer':fn='vp_request_installer';args={};break;
  case 'merch_request':fn='vp_merch_request';args={p_product:d.productId,p_quantity:d.quantity};break;
  case 'merch_accept':if(d.accept!==true)throw new Error('Kostenpflichtiges Angebot ausdrücklich bestätigen.');fn='vp_merch_accept';args={p_id:d.id,p_version:d.version};break;
- case 'create_address':fn='vp_create_address';args={p_territory:d.territoryId,p_data:d.address};break;
- case 'select_street':{
- if(account.status!=='active')throw new Error('Aktiver Partnerzugang erforderlich.');
- const settings=await db.from('vp_settings').select('d2d_open').single();if(!settings.data?.d2d_open)throw new Error('D2D-Echtbetrieb noch nicht freigegeben.');
- const permit=await db.rpc('vp_geo_request');if(permit.error||!permit.data)throw new Error('Bitte einige Sekunden warten und erneut suchen.');
- const street=await getStreetAddresses(d.street,d.postalCode);
- const selected=await db.rpc('vp_select_street',{p_street:street.street,p_postal_code:street.postalCode,p_bbox:street.bbox});if(selected.error)throw new Error(selected.error.message);
- const t=await db.from('vp_territories').select('import_finished').eq('id',selected.data).single();if(t.error)throw new Error(t.error.message);
- if(!t.data.import_finished){const begin=await db.rpc('vp_begin_address_import',{p_id:selected.data});if(begin.error)throw new Error(begin.error.message);
- for(let i=0;i<street.rows.length;i+=500){const imported=await db.rpc('vp_import_addresses',{p_territory:selected.data,p_rows:street.rows.slice(i,i+500),p_source:OSM_SOURCE,p_coverage:'Adresspunkte zur Straße und PLZ aus OpenStreetMap. Keine Vollständigkeitsgarantie.'});if(imported.error)throw new Error(imported.error.message);}
- const finish=await db.rpc('vp_finish_address_import',{p_id:selected.data,p_offset:Number(begin.data),p_next:Number(begin.data)+100,p_more:false});if(finish.error)throw new Error(finish.error.message);
- }
- return json({ok:true,result:selected.data});
- }
+ case 'create_address':fn='vp_create_map_address';args={p_data:d.address};break;
+ case 'select_street':throw new Error('Bitte die gespeicherte Deutschland-Karte und Orts-/PLZ-Suche verwenden.');
  case 'select_area':throw new Error('Bitte eine Straße mit Postleitzahl auswählen. Die Umkreissuche wurde entfernt.');
  case 'claim_area':fn='vp_claim_territory';args={p_id:d.id};break;
  case 'claim_address':fn='vp_claim_address';args={p_id:d.id};break;
+ case 'building':fn='vp_update_building';args={p_id:d.id,p_kind:d.kind,p_units:d.units||null};break;
  case 'qualify':fn='vp_qualify_address';args={p_id:d.id,p_status:d.status,p_households:d.households||null};break;
  case 'contact':fn='vp_save_contact';args={p_address:d.addressId,p_contact:d.id||null,p_data:d.contact};break;
  case 'delete_contact':fn='vp_delete_contact';args={p_id:d.id};break;
