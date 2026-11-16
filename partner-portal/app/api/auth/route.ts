@@ -7,7 +7,7 @@ export async function POST(request:Request){try{const d=await body(request),db=a
  if(action==='signup'){
  if(d.website)return json({ok:true,message:'Bitte prüfe dein E-Mail-Postfach.'});
  if(password.length<12||password.length>128||d.accountPrivacyAccepted!==true)throw new Error('Mindestens 12 Zeichen Passwort und Kenntnisnahme der Kontodatenschutzhinweise erforderlich.');
- const {error}=await db.auth.signUp({email,password,options:{emailRedirectTo:new URL('/auth/callback',request.url).href}});if(error)throw new Error('Kontoregistrierung derzeit nicht möglich. Bitte Angaben und E-Mail-Konfiguration prüfen.');
+ const {error}=await db.auth.signUp({email,password,options:{emailRedirectTo:new URL('/auth/callback',request.url).href}});if(error){console.error('[vp-signup] Supabase Auth signUp failed',{code:error.code,status:error.status});return json({error:'Die Registrierung konnte nicht vollständig abgeschlossen werden. Möglicherweise wurde das Konto bereits angelegt. Bitte registriere dich nicht erneut. Prüfe dein Postfach und nutze bei Bedarf „Passwort vergessen“. Falls keine E-Mail ankommt, wende dich an den Support.'},503);}
  return json({ok:true,message:'Bitte bestätige deine E-Mail. Das technische Konto ist noch keine freigeschaltete Vertriebspartnerschaft.'});
  }
  if(action==='login'){if(!password||password.length>128)throw new Error('Zugangsdaten prüfen.');const {error}=await db.auth.signInWithPassword({email,password});if(error)throw new Error('Anmeldung fehlgeschlagen. Bitte Zugangsdaten und E-Mail-Bestätigung prüfen.');return json({ok:true})}
