@@ -9,7 +9,7 @@ test('SMTP test runs behind admin authorization',()=>{
 });
 test('SMTP test destination is the authenticated admin account only',()=>{
  const block=src.split("case 'admin_test_smtp':")[1].split("case 'admin_job_cancel':")[0];
- assert.match(block,/account\.email/);
+ assert.match(block,/user\.email/);
  assert.match(block,/to:userEmail/);
  assert.doesNotMatch(block,/d\.email|d\.to|d\.recipient/);
  assert.match(block,/process\.env\.SMTP_PASSWORD/);
