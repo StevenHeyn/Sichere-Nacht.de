@@ -10,12 +10,12 @@ export async function POST(request:Request){try{const d=await body(request,12000
  case 'admin_test_smtp':{
   const userEmail=String(user.email||'').trim();
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail))throw new Error('Die bestätigte E-Mail-Adresse deines Admin-Logins ist ungültig.');
-  const host=process.env.SMTP_HOST,port=process.env.SMTP_PORT,user=process.env.SMTP_USER,password=process.env.SMTP_PASSWORD;
-  if(!host||!port||!user||!password)throw new Error('SMTP ist serverseitig unvollständig konfiguriert.');
+  const host=process.env.SMTP_HOST,port=process.env.SMTP_PORT,smtpUser=process.env.SMTP_USER,password=process.env.SMTP_PASSWORD;
+  if(!host||!port||!smtpUser||!password)throw new Error('SMTP ist serverseitig unvollständig konfiguriert.');
   if(host!=='smtp.ionos.de'||port!=='465')throw new Error('Die SMTP-Testkonfiguration stimmt nicht mit IONOS Port 465 überein.');
   const html=partnerEmail({firstName:String(account.full_name||'').trim().split(' ')[0]||'Admin',eyebrow:'E-MAIL-SYSTEMTEST',headline:'Dein SMTP-Test von Sichere Nacht',message:'Dies ist eine Testnachricht aus dem Sichere-Nacht-Partnerportal. Wenn du sie liest, hat IONOS die Nachricht angenommen und sie wurde an dein Postfach zugestellt.',status:'Testnachricht',note:'Es wurden keine Erinnerungen an Vertriebspartner ausgelöst.',buttonText:'Partnerportal öffnen'});
   try{
-   await sendSmtp({host,port,user,password,to:userEmail,subject:'Sichere Nacht | IONOS-SMTP-Test',html});
+   await sendSmtp({host,port,user:smtpUser,password,to:userEmail,subject:'Sichere Nacht | IONOS-SMTP-Test',html});
   }catch(e){console.error('VP_SMTP_TEST_FAILED',e instanceof Error?e.message:'unknown');throw new Error('IONOS hat den SMTP-Test nicht erfolgreich angenommen. Bitte Serverprotokoll prüfen.');}
   return json({ok:true,result:{accepted:true,recipient:userEmail}});
  }
