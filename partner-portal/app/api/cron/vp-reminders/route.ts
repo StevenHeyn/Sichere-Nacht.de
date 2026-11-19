@@ -8,7 +8,8 @@ export async function GET(request:Request){
  const secret=process.env.CRON_SECRET;
  if(!secret||request.headers.get('authorization')!==`Bearer ${secret}`)return Response.json({error:'Unauthorized'},{status:401});
  const now=new Date(),parts=berlinParts(now);
- if(parts.hour!=='09')return Response.json({ok:true,skipped:'outside_berlin_9am'});
+ // Vercel Hobby allows one daily UTC run: 09:00 CET in winter, 10:00 CEST in summer.
+ if(!['09','10'].includes(parts.hour))return Response.json({ok:true,skipped:'outside_daily_window'});
  // Disabled by default: explicit launch only after email/legal review and database migration.
  if(process.env.VP_REMINDERS_ENABLED!=='true')return Response.json({ok:true,skipped:'disabled'});
  const url=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY,apiKey=process.env.RESEND_API_KEY;
