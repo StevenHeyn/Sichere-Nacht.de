@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/vp-reminders",
+      "schedule": "0 * * * *"
+    }
+  ]
+}
