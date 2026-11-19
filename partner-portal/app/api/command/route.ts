@@ -6,6 +6,7 @@ export async function POST(request:Request){try{const d=await body(request,12000
  if(str(d.action).startsWith('admin_')&&account.role!=='admin')throw new Error('Adminzugang erforderlich.');
  switch(d.action){
  case 'admin_job_cancel':fn='vp_cancel_installation_job';args={p_id:d.id};break;
+ case 'reminder_preference':fn='vp_set_reminder_opt_out';args={p_opt_out:d.optOut===true};break;
  case 'sales_quiz':fn='vp_submit_sales_quiz';args={p_answers:d.answers,p_version:d.version};break;
  case 'installer_quiz':fn='vp_submit_installer_quiz';args={p_answers:d.answers,p_version:d.version};break;
  case 'job_accept':fn='vp_accept_installation_job';args={p_id:d.id};break;
