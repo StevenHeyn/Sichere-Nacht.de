@@ -1,4 +1,5 @@
 import {sendSmtp} from '../../../../lib/smtp.mjs';
+import {partnerEmail} from '../../../../lib/partner-email.mjs';
 import {createClient} from '@supabase/supabase-js';
 export const dynamic='force-dynamic';
 export const maxDuration=60;
@@ -29,10 +30,10 @@ export async function GET(request:Request){
   const kind=profile&&training?'both':profile?'profile':'training';
   const {data:reservation,error:reserveError}=await db.from('vp_daily_reminders').insert({user_id:account.user_id,reminder_date:date,reminder_kind:kind,status:'reserved'}).select('id').single();
   if(reserveError||!reservation){skipped++;continue}
-  const name=escapeHtml((account.full_name||'').trim().split(' ')[0]||'Vertriebspartner');
+  const name=(account.full_name||'').trim().split(' ')[0]||'Vertriebspartner';
   const detail=kind==='profile'?'Bitte vervollständige deinen Partnerantrag und lade die erforderlichen Unterlagen hoch.':kind==='training'?'Bitte absolviere den verpflichtenden Grundlagen-Test in unserer Akademie.':'Bitte vervollständige deinen Partnerantrag und absolviere anschließend den Grundlagen-Test.';
   const subject=kind==='profile'?'Dein Partnerantrag wartet auf dich | Sichere Nacht':'Deine nächsten Schritte im VP-Portal | Sichere Nacht';
-  const html=`<div style="font-family:Arial,sans-serif;max-width:580px;margin:auto;color:#10243b"><h2>SICHERE NACHT</h2><p>Hallo ${name},</p><p>${detail}</p><p><a href="${portal}/portal" style="display:inline-block;background:#176a98;color:#fff;padding:14px 22px;border-radius:7px;text-decoration:none">Zum VP-Portal</a></p><p>Wenn du die Schritte inzwischen abgeschlossen hast, kannst du diese Nachricht ignorieren.</p><p style="font-size:12px;color:#627487">H&amp;K Projekt UG (haftungsbeschränkt), Lehmkoppel 7, 25499 Tangstedt · <a href="${portal}/datenschutz">Datenschutz</a></p></div>`;
+  const html=partnerEmail({firstName:name,eyebrow:'DEINE NÄCHSTEN SCHRITTE',headline:'Dein nächster Schritt bei Sichere Nacht',message:detail,status:'Aktion erforderlich',note:'Wenn du die Aufgabe inzwischen abgeschlossen hast, kannst du diese Erinnerung ignorieren.'});
   try{
    await sendSmtp({host:smtpHost,port:smtpPort,user:smtpUser,password:smtpPassword,to:account.email,subject,html});
    await db.from('vp_daily_reminders').update({status:'sent',sent_at:new Date().toISOString()}).eq('id',reservation.id);
