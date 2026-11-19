@@ -1,4 +1,5 @@
 -- VP reminder send ledger. Apply after reviewing email/legal policy.
+alter table public.vp_accounts add column if not exists reminder_opt_out boolean not null default false;
 create table if not exists public.vp_daily_reminders (
  id bigint generated always as identity primary key,
  user_id uuid not null references auth.users(id) on delete cascade,
