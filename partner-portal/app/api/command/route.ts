@@ -1,3 +1,5 @@
+import {sendSmtp} from '../../../lib/smtp.mjs';
+import {partnerEmail} from '../../../lib/partner-email.mjs';
 import {resolvePostalArea} from '../../../lib/postal-area';
 import {body,member,json,failure} from '../../../lib/server';
 export const dynamic='force-dynamic';export const maxDuration=60;
@@ -5,6 +7,18 @@ const str=(v:unknown,max=1000)=>typeof v==='string'?v.slice(0,max):'';
 export async function POST(request:Request){try{const d=await body(request,120000),{db,account}=await member();let fn:string,args:Record<string,unknown>;
  if(str(d.action).startsWith('admin_')&&account.role!=='admin')throw new Error('Adminzugang erforderlich.');
  switch(d.action){
+ case 'admin_test_smtp':{
+  const userEmail=String(account.email||'').trim();
+  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(userEmail))throw new Error('Im Adminkonto ist keine gültige E-Mail-Adresse hinterlegt.');
+  const host=process.env.SMTP_HOST,port=process.env.SMTP_PORT,user=process.env.SMTP_USER,password=process.env.SMTP_PASSWORD;
+  if(!host||!port||!user||!password)throw new Error('SMTP ist serverseitig unvollständig konfiguriert.');
+  if(host!=='smtp.ionos.de'||port!=='465')throw new Error('Die SMTP-Testkonfiguration stimmt nicht mit IONOS Port 465 überein.');
+  const html=partnerEmail({firstName:String(account.full_name||'').trim().split(' ')[0]||'Admin',eyebrow:'E-MAIL-SYSTEMTEST',headline:'Dein SMTP-Test von Sichere Nacht',message:'Dies ist eine Testnachricht aus dem Sichere-Nacht-Partnerportal. Wenn du sie liest, hat IONOS die Nachricht angenommen und sie wurde an dein Postfach zugestellt.',status:'Testnachricht',note:'Es wurden keine Erinnerungen an Vertriebspartner ausgelöst.',buttonText:'Partnerportal öffnen'});
+  try{
+   await sendSmtp({host,port,user,password,to:userEmail,subject:'Sichere Nacht | IONOS-SMTP-Test',html});
+  }catch(e){console.error('VP_SMTP_TEST_FAILED',e instanceof Error?e.message:'unknown');throw new Error('IONOS hat den SMTP-Test nicht erfolgreich angenommen. Bitte Serverprotokoll prüfen.');}
+  return json({ok:true,result:{accepted:true,recipient:userEmail}});
+ }
  case 'admin_job_cancel':fn='vp_cancel_installation_job';args={p_id:d.id};break;
  case 'reminder_preference':fn='vp_set_reminder_opt_out';args={p_opt_out:d.optOut===true};break;
  case 'sales_quiz':fn='vp_submit_sales_quiz';args={p_answers:d.answers,p_version:d.version};break;
