@@ -4,12 +4,12 @@ import {resolvePostalArea} from '../../../lib/postal-area';
 import {body,member,json,failure} from '../../../lib/server';
 export const dynamic='force-dynamic';export const maxDuration=60;
 const str=(v:unknown,max=1000)=>typeof v==='string'?v.slice(0,max):'';
-export async function POST(request:Request){try{const d=await body(request,120000),{db,account}=await member();let fn:string,args:Record<string,unknown>;
+export async function POST(request:Request){try{const d=await body(request,120000),{db,user,account}=await member();let fn:string,args:Record<string,unknown>;
  if(str(d.action).startsWith('admin_')&&account.role!=='admin')throw new Error('Adminzugang erforderlich.');
  switch(d.action){
  case 'admin_test_smtp':{
-  const userEmail=String(account.email||'').trim();
-  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(userEmail))throw new Error('Im Adminkonto ist keine gültige E-Mail-Adresse hinterlegt.');
+  const userEmail=String(user.email||'').trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail))throw new Error('Die bestätigte E-Mail-Adresse deines Admin-Logins ist ungültig.');
   const host=process.env.SMTP_HOST,port=process.env.SMTP_PORT,user=process.env.SMTP_USER,password=process.env.SMTP_PASSWORD;
   if(!host||!port||!user||!password)throw new Error('SMTP ist serverseitig unvollständig konfiguriert.');
   if(host!=='smtp.ionos.de'||port!=='465')throw new Error('Die SMTP-Testkonfiguration stimmt nicht mit IONOS Port 465 überein.');
