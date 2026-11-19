@@ -17,5 +17,7 @@ test('SMTP test destination is the authenticated admin account only',()=>{
 });
 test('admin UI exposes safe, opt-in SMTP test',()=>{
  assert.match(ui,/IONOS-SMTP-Test/);
- assert.match(ui,/act\('admin_test_smtp',\{\}\)/);
+ assert.match(ui,/action:'admin_test_smtp'/);
+ assert.match(ui,/aria-live="polite"/);
+ assert.match(ui,/setSmtpMessage/);
 });
