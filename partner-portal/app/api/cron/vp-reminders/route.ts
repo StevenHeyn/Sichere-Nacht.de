@@ -1,3 +1,4 @@
+import {sendSmtp} from '../../../../lib/smtp.mjs';
 import {createClient} from '@supabase/supabase-js';
 export const dynamic='force-dynamic';
 export const maxDuration=60;
@@ -12,8 +13,9 @@ export async function GET(request:Request){
  if(!['09','10'].includes(parts.hour))return Response.json({ok:true,skipped:'outside_daily_window'});
  // Disabled by default: explicit launch only after email/legal review and database migration.
  if(process.env.VP_REMINDERS_ENABLED!=='true')return Response.json({ok:true,skipped:'disabled'});
- const url=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY,apiKey=process.env.RESEND_API_KEY;
- if(!url||!key||!apiKey)return Response.json({error:'Missing server configuration'},{status:503});
+ const url=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
+ const smtpHost=process.env.SMTP_HOST,smtpPort=process.env.SMTP_PORT,smtpUser=process.env.SMTP_USER,smtpPassword=process.env.SMTP_PASSWORD;
+ if(!url||!key||!smtpHost||!smtpPort||!smtpUser||!smtpPassword)return Response.json({error:'Missing server configuration'},{status:503});
  const db=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
  const date=`${parts.year}-${parts.month}-${parts.day}`;
  const {data:accounts,error}=await db.from('vp_accounts').select('user_id,email,full_name,status,role,submitted_at,sales_passed_at,created_at,reminder_opt_out').in('status',['onboarding','active']).neq('role','admin').eq('reminder_opt_out',false).limit(500);
@@ -32,10 +34,8 @@ export async function GET(request:Request){
   const subject=kind==='profile'?'Dein Partnerantrag wartet auf dich | Sichere Nacht':'Deine nächsten Schritte im VP-Portal | Sichere Nacht';
   const html=`<div style="font-family:Arial,sans-serif;max-width:580px;margin:auto;color:#10243b"><h2>SICHERE NACHT</h2><p>Hallo ${name},</p><p>${detail}</p><p><a href="${portal}/portal" style="display:inline-block;background:#176a98;color:#fff;padding:14px 22px;border-radius:7px;text-decoration:none">Zum VP-Portal</a></p><p>Wenn du die Schritte inzwischen abgeschlossen hast, kannst du diese Nachricht ignorieren.</p><p style="font-size:12px;color:#627487">H&amp;K Projekt UG (haftungsbeschränkt), Lehmkoppel 7, 25499 Tangstedt · <a href="${portal}/datenschutz">Datenschutz</a></p></div>`;
   try{
-   const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{'authorization':`Bearer ${apiKey}`,'content-type':'application/json','Idempotency-Key':`vp-reminder-${date}-${account.user_id}`},body:JSON.stringify({from:'Sichere Nacht <noreply@sichere-nacht.de>',to:[account.email],subject,html})});
-   const result=await response.json().catch(()=>({}));
-   if(!response.ok||!result.id)throw new Error('Provider did not accept email');
-   await db.from('vp_daily_reminders').update({status:'sent',sent_at:new Date().toISOString(),provider_message_id:String(result.id)}).eq('id',reservation.id);
+   await sendSmtp({host:smtpHost,port:smtpPort,user:smtpUser,password:smtpPassword,to:account.email,subject,html});
+   await db.from('vp_daily_reminders').update({status:'sent',sent_at:new Date().toISOString()}).eq('id',reservation.id);
    sent++;
   }catch{await db.from('vp_daily_reminders').update({status:'failed'}).eq('id',reservation.id);failed++}
  }
