@@ -1,7 +1,9 @@
 name: Partner portal isolation and build
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feature/partner-portal-v1]
+  push:
+    branches: [fix/vp-phase1-build-isolation-20261119]
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,6 +22,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
+          cache-dependency-path: partner-portal/package-lock.json
       - run: npm ci --no-audit --no-fund
       - run: npm test
       - run: npm run build

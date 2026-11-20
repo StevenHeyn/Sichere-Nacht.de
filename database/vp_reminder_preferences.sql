@@ -1,0 +1,3 @@
+create or replace function public.vp_set_reminder_opt_out(p_opt_out boolean) returns boolean language plpgsql security definer set search_path to '' as $$ begin if auth.uid() is null then raise exception 'Anmeldung erforderlich' using errcode='42501'; end if; update public.vp_accounts set reminder_opt_out=p_opt_out where user_id=auth.uid(); if not found then raise exception 'Partnerkonto fehlt' using errcode='42501'; end if; return true; end $$;
+revoke all on function public.vp_set_reminder_opt_out(boolean) from public, anon;
+grant execute on function public.vp_set_reminder_opt_out(boolean) to authenticated;

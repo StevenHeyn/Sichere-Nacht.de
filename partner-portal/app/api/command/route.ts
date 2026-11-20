@@ -1,11 +1,26 @@
+import {sendSmtp} from '../../../lib/smtp.mjs';
+import {partnerEmail} from '../../../lib/partner-email.mjs';
 import {resolvePostalArea} from '../../../lib/postal-area';
 import {body,member,json,failure} from '../../../lib/server';
 export const dynamic='force-dynamic';export const maxDuration=60;
 const str=(v:unknown,max=1000)=>typeof v==='string'?v.slice(0,max):'';
-export async function POST(request:Request){try{const d=await body(request,120000),{db,account}=await member();let fn:string,args:Record<string,unknown>;
+export async function POST(request:Request){try{const d=await body(request,120000),{db,user,account}=await member();let fn:string,args:Record<string,unknown>;
  if(str(d.action).startsWith('admin_')&&account.role!=='admin')throw new Error('Adminzugang erforderlich.');
  switch(d.action){
+ case 'admin_test_smtp':{
+  const userEmail=String(user.email||'').trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail))throw new Error('Die bestätigte E-Mail-Adresse deines Admin-Logins ist ungültig.');
+  const host=process.env.SMTP_HOST,port=process.env.SMTP_PORT,smtpUser=process.env.SMTP_USER,password=process.env.SMTP_PASSWORD;
+  if(!host||!port||!smtpUser||!password)throw new Error('SMTP ist serverseitig unvollständig konfiguriert.');
+  if(host!=='smtp.ionos.de'||port!=='465')throw new Error('Die SMTP-Testkonfiguration stimmt nicht mit IONOS Port 465 überein.');
+  const html=partnerEmail({firstName:String(account.full_name||'').trim().split(' ')[0]||'Admin',eyebrow:'E-MAIL-SYSTEMTEST',headline:'Dein SMTP-Test von Sichere Nacht',message:'Dies ist eine Testnachricht aus dem Sichere-Nacht-Partnerportal. Wenn du sie liest, hat IONOS die Nachricht angenommen und sie wurde an dein Postfach zugestellt.',status:'Testnachricht',note:'Es wurden keine Erinnerungen an Vertriebspartner ausgelöst.',buttonText:'Partnerportal öffnen'});
+  try{
+   await sendSmtp({host,port,user:smtpUser,password,to:userEmail,subject:'Sichere Nacht | IONOS-SMTP-Test',html});
+  }catch(e){console.error('VP_SMTP_TEST_FAILED',e instanceof Error?e.message:'unknown');throw new Error('IONOS hat den SMTP-Test nicht erfolgreich angenommen. Bitte Serverprotokoll prüfen.');}
+  return json({ok:true,result:{accepted:true,recipient:userEmail}});
+ }
  case 'admin_job_cancel':fn='vp_cancel_installation_job';args={p_id:d.id};break;
+ case 'reminder_preference':fn='vp_set_reminder_opt_out';args={p_opt_out:d.optOut===true};break;
  case 'sales_quiz':fn='vp_submit_sales_quiz';args={p_answers:d.answers,p_version:d.version};break;
  case 'installer_quiz':fn='vp_submit_installer_quiz';args={p_answers:d.answers,p_version:d.version};break;
  case 'job_accept':fn='vp_accept_installation_job';args={p_id:d.id};break;
@@ -29,7 +44,19 @@ export async function POST(request:Request){try{const d=await body(request,12000
  case 'contact':fn='vp_save_contact';args={p_address:d.addressId,p_contact:d.id||null,p_data:d.contact};break;
  case 'delete_contact':fn='vp_delete_contact';args={p_id:d.id};break;
  case 'permission_use':fn='vp_record_permission_use';args={p_id:d.id,p_reason:str(d.reason)};break;
- case 'admin_account':fn='vp_admin_account';args={p_user:d.userId,p_action:d.operation,p_reason:str(d.reason)};break;
+ case 'admin_account':{
+  const userId=str(d.userId,40),operation=str(d.operation,24),reason=str(d.reason,500);
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId))throw new Error('Ungültige Partnerkennung. Bitte Partnerliste aktualisieren.');
+  if(operation==='approve'){
+   if(reason.trim().length<5)throw new Error('Bitte eine nachvollziehbare Prüfbegründung eingeben.');
+   const approved=await db.rpc('vp_admin_account',{p_user:userId,p_action:'approve',p_reason:reason});
+   if(approved.error){console.error('VP_APPROVAL_RPC_FAILED',{code:approved.error.code});throw new Error(approved.error.message||'Freigabe durch Datenbank abgelehnt.');}
+   const checked=await db.from('vp_accounts').select('user_id,status,approved_at').eq('user_id',userId).single();
+   if(checked.error||checked.data?.status!=='active'){console.error('VP_APPROVAL_VERIFY_FAILED',{code:checked.error?.code||'status_not_active'});throw new Error('Freigabe nicht bestätigt. Bitte den aktuellen Partnerstatus prüfen.');}
+   return json({ok:true,result:{approved:true,userId,status:'active',approvedAt:checked.data.approved_at}});
+  }
+  fn='vp_admin_account';args={p_user:userId,p_action:operation,p_reason:reason};break;
+ }
  case 'admin_learning':fn='vp_admin_learning';args={p_action:d.operation,p_data:d.data};break;
  case 'admin_merch':fn='vp_admin_merch';args={p_id:d.id,p_total:d.totalCents,p_description:str(d.description,5000)};break;
  case 'admin_area':fn='vp_admin_area';args={p_label:str(d.label,200),p_bbox:d.bbox};break;

@@ -8,7 +8,7 @@ import ts from 'typescript';
 // errors do not reject the promise, which previously caused false successes.
 const source=readFileSync(new URL('../app/api/auth/route.ts',import.meta.url),'utf8');
 const code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
-async function resetWith(providerResult){
+async function resetWith(providerResult,requestUrl='https://vp.sichere-nacht.de/api/auth'){
  const calls=[],exports={};
  const server={
   body:request=>request.json(),
@@ -17,7 +17,7 @@ async function resetWith(providerResult){
   failure:error=>Response.json({error:error.message},{status:400})
  };
  runInNewContext(code,{exports,URL,require:name=>{assert.equal(name,'../../../lib/server');return server}});
- const response=await exports.POST(new Request('https://vp.sichere-nacht.de/api/auth',{
+ const response=await exports.POST(new Request(requestUrl,{
   method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'reset',email:' Partner@Example.com '})
  }));
  return {status:response.status,data:await response.json(),calls};
@@ -43,5 +43,11 @@ test('accepted reset keeps a neutral account response and the portal recovery ca
  assert.match(result.data.message,/selben Browser/);
  assert.equal(result.calls.length,1);
  assert.equal(result.calls[0][0],'partner@example.com');
+ assert.equal(result.calls[0][1].redirectTo,'https://vp.sichere-nacht.de/auth/callback?recovery=1');
+});
+
+test('password recovery redirect ignores hostile request origins',async()=>{
+ const result=await resetWith({data:{},error:null},'https://attacker.example/api/auth');
+ assert.equal(result.status,200);
  assert.equal(result.calls[0][1].redirectTo,'https://vp.sichere-nacht.de/auth/callback?recovery=1');
 });

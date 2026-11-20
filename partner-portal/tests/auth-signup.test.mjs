@@ -6,7 +6,7 @@ import ts from 'typescript';
 
 const source=readFileSync(new URL('../app/api/auth/route.ts',import.meta.url),'utf8');
 const code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
-async function signupWith(providerResult,overrides={}){
+async function signupWith(providerResult,overrides={},requestUrl='https://vp.sichere-nacht.de/api/auth'){
  const calls=[],exports={};
  const server={
   body:request=>request.json(),
@@ -15,7 +15,7 @@ async function signupWith(providerResult,overrides={}){
   failure:error=>Response.json({error:error.message},{status:400})
  };
  runInNewContext(code,{exports,URL,require:name=>{assert.equal(name,'../../../lib/server');return server}});
- const response=await exports.POST(new Request('https://vp.sichere-nacht.de/api/auth',{
+ const response=await exports.POST(new Request(requestUrl,{
   method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'signup',email:' Partner@Example.com ',password:'a-long-test-password',accountPrivacyAccepted:true,...overrides})
  }));
  return {status:response.status,data:await response.json(),calls};
@@ -86,4 +86,15 @@ test('resend rate limits return a cooldown and never claim delivery',async()=>{
  assert.equal(result.data.ok,undefined);
  assert.equal(result.data.retryAfterSeconds,60);
  assert.match(result.data.error,/kein neuer Link/);
+});
+
+test('confirmation redirect cannot be influenced by a hostile request origin',async()=>{
+ const result=await signupWith({error:null},{},'https://attacker.example/api/auth');
+ assert.equal(result.status,200);
+ assert.equal(result.calls[0][0].options.emailRedirectTo,'https://vp.sichere-nacht.de/auth/callback');
+});
+test('resend redirect cannot be influenced by a preview or hostile request origin',async()=>{
+ const result=await signupWith({error:null},{action:'resend_confirmation'},'https://attacker.example/api/auth');
+ assert.equal(result.status,200);
+ assert.equal(result.calls[0][0].options.emailRedirectTo,'https://vp.sichere-nacht.de/auth/callback');
 });
