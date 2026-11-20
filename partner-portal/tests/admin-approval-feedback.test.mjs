@@ -3,8 +3,11 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const admin=readFileSync(new URL('../app/portal/views/admin.tsx',import.meta.url),'utf8');
 const portal=readFileSync(new URL('../app/portal/portal-client.tsx',import.meta.url),'utf8');
-test('approval form renders at selected partner rather than below list',()=>{
- assert.match(admin,/approval\?\.user_id===a\.user_id/);
+test('first click opens a fixed, visible approval dialog',()=>{
+ assert.match(admin,/aria-haspopup="dialog"/);
+ assert.match(admin,/setApproval\(a\)/);
+ assert.match(admin,/role="dialog" aria-modal="true"/);
+ assert.match(admin,/position:'fixed',inset:0,zIndex:10000/);
  assert.match(admin,/autoFocus value=\{approvalReason\}/);
 });
 test('approval displays clear success and actionable errors',()=>{
