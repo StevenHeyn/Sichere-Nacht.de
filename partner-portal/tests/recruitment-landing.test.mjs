@@ -56,3 +56,11 @@ test('landing answers keyword intent with substantive helpful copy',()=>{
  assert.match(page,/Vertrieb für Sicherheitstechnik/);
  assert.match(page,/Keine Verdienstgarantie/);
 });
+
+const nextConfig=readFileSync(new URL('../next.config.mjs',import.meta.url),'utf8');
+test('no global X-Robots-Tag blocks the public landing',()=>{
+ assert.match(nextConfig,/source:'\/:path\(\(\?!vertriebspartner\)\.\*\)'/);
+ assert.match(nextConfig,/key:'X-Robots-Tag',value:'noindex, nofollow, noarchive'/);
+ const globalHeaders=nextConfig.split("source:'/:path*'")[1].split("source:'/:path((?!vertriebspartner).*)'")[0];
+ assert.doesNotMatch(globalHeaders,/X-Robots-Tag/);
+});
