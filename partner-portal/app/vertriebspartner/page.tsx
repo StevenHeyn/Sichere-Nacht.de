@@ -3,10 +3,13 @@ import Link from 'next/link';
 import styles from './page.module.css';
 
 export const metadata:Metadata={
- title:'Vertriebspartner werden | Sichere Nacht',
- description:'Starte als Vertriebspartner für Ajax-Sicherheitssysteme bei Sichere Nacht. Erfahre mehr über die Zusammenarbeit, Schulung, digitale Tools und den Bewerbungsablauf.',
+ title:'Vertriebspartner für Alarmanlagen werden | Sichere Nacht',
+ description:'Vertriebspartner für Alarmanlagen und Sicherheitstechnik werden: Ajax-Systeme vermitteln, digital arbeiten und geschult starten. Jetzt bei Sichere Nacht bewerben.',
+ keywords:['Vertriebspartner Alarmanlagen','Sicherheitstechnik Vertriebspartner','Ajax Alarmanlagen Vertrieb','Alarmanlagen verkaufen','Vertriebspartner werden Sicherheitstechnik'],
  alternates:{canonical:'https://vp.sichere-nacht.de/vertriebspartner'},
- robots:{index:true,follow:true}
+ openGraph:{type:'website',locale:'de_DE',siteName:'Sichere Nacht',title:'Vertriebspartner für Alarmanlagen werden | Sichere Nacht',description:'Starte im Vertrieb für moderne Sicherheitstechnik: Partnerportal, Schulungen und ein klarer Bewerbungsprozess.',url:'https://vp.sichere-nacht.de/vertriebspartner'},
+ twitter:{card:'summary',title:'Vertriebspartner für Alarmanlagen werden | Sichere Nacht',description:'Vertrieb von Ajax-Sicherheitssystemen mit Schulung und digitalem Partnerportal.'},
+ robots:{index:true,follow:true,googleBot:{index:true,follow:true}}
 };
 const register='/login?register=1';
 const benefits=[
@@ -25,11 +28,23 @@ const faqs=[
  {q:'Kann ich sofort nach der Registrierung verkaufen?',a:'Nein. Nach deiner E-Mail-Bestätigung reichst du den vollständigen Antrag und die erforderlichen Nachweise ein. Erst nach manueller Freigabe und bestandenem Vertriebstest wird der Verkauf im Partnerportal freigeschaltet.'},
  {q:'Wie funktioniert die Vergütung?',a:'Die konkreten Provisions- und Abrechnungsbedingungen erhältst du im Rahmen der vertraglichen Zusammenarbeit. Deine freigegebenen Umsätze und die zugehörigen Abrechnungen kannst du anschließend im Partnerportal nachvollziehen. Eine bestimmte Verdiensthöhe wird nicht zugesagt.'},
  {q:'Gibt es auch eine Möglichkeit für Montagepartner?',a:'Im Partnerportal gibt es eine gesonderte Monteurqualifizierung. Die Masterclass und ihre Prüfung sind zusätzliche Voraussetzungen; ein Vertriebspartnerkonto allein berechtigt nicht zur Übernahme von Montageaufträgen.'},
- {q:'Welche Unterlagen benötige ich?',a:'Für die Antragstellung sind derzeit ein Portraitfoto, ein Gewerbenachweis und die Annahme der jeweils veröffentlichten Vertragsfassung vorgesehen. Weitere Profildaten werden im Bewerbungsprozess abgefragt.'}
+ {q:'Welche Unterlagen benötige ich?',a:'Für die Antragstellung sind derzeit ein Portraitfoto, ein Gewerbenachweis und die Annahme der jeweils veröffentlichten Vertragsfassung vorgesehen. Weitere Profildaten werden im Bewerbungsprozess abgefragt.'},
+ {q:'Ist die Zusammenarbeit für selbstständige Vertriebspartner vorgesehen?',a:'Der aktuelle Partnerantrag sieht einen Gewerbenachweis vor. Es handelt sich um eine vertraglich geregelte Vertriebspartnerschaft, nicht um die Zusage einer Festanstellung. Die konkreten Bedingungen werden vor einer Freigabe geprüft.'},
+ {q:'Kann ich im Außendienst oder im Empfehlungsvertrieb tätig werden?',a:'Das Partnerportal unterstützt Gebietsarbeit und die Vermittlung über persönliche Empfehlungen. Welche Tätigkeiten und Gebiete freigeschaltet werden, richtet sich nach dem Partnerstatus und den jeweils gültigen Regeln.'},
+ {q:'Kann ich mich auch außerhalb von Hamburg bewerben?',a:'Das Partnerportal unterstützt die Gebietsverwaltung in Deutschland. Ob und in welchem Umfang du in einer bestimmten Region tätig werden kannst, wird im Rahmen der Zusammenarbeit geklärt.'}
 ];
+const origin='https://vp.sichere-nacht.de';
+const structuredData={
+ '@context':'https://schema.org','@graph':[
+  {'@type':'Organization','@id':origin+'/vertriebspartner#organization',name:'H&K Projekt UG (haftungsbeschränkt)',alternateName:'Sichere Nacht',url:'https://sichere-nacht.de',address:{'@type':'PostalAddress',streetAddress:'Lehmkoppel 7',postalCode:'25499',addressLocality:'Tangstedt',addressCountry:'DE'}},
+  {'@type':'WebPage','@id':origin+'/vertriebspartner#webpage',url:origin+'/vertriebspartner',name:'Vertriebspartner für Alarmanlagen werden | Sichere Nacht',description:'Bewerbungsinformationen für Vertriebspartner von Ajax-Sicherheitssystemen.',inLanguage:'de-DE',about:{'@id':origin+'/vertriebspartner#organization'}},
+  {'@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'Partnerportal',item:origin},{'@type':'ListItem',position:2,name:'Vertriebspartner werden',item:origin+'/vertriebspartner'}]},
+  {'@type':'FAQPage',mainEntity:faqs.map(f=>({'@type':'Question',name:f.q,acceptedAnswer:{'@type':'Answer',text:f.a}}))}
+ ]
+};
 function Arrow(){return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
 function Shield(){return <svg viewBox="0 0 120 136" role="img" aria-label="Symbol für moderne Sicherheitssysteme"><defs><linearGradient id="s" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#b9ffe6"/><stop offset="1" stopColor="#4fd4b2"/></linearGradient></defs><path d="M60 8 108 27v37c0 31-19 51-48 64C31 115 12 95 12 64V27L60 8Z" fill="url(#s)" opacity=".16" stroke="#9aefd2" strokeWidth="2"/><path d="m40 67 14 13 28-31" fill="none" stroke="#a8ffdc" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-export default function RecruitmentLanding(){return <main className={styles.page}>
+export default function RecruitmentLanding(){return <main className={styles.page}><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(structuredData).replace(/</g,'\\u003c')}}/>
  <div className={styles.announcement}><span className={styles.pulse}></span> DEIN EINSTIEG IN DEN SICHERHEITSVERTRIEB <span className={styles.announcementDivider}>/</span> HAMBURG &amp; DEUTSCHLAND</div>
  <section className={styles.hero} aria-labelledby="vp-title"><div className={styles.container}><div className={styles.heroGrid}>
   <div className={styles.heroCopy}>
@@ -52,6 +67,7 @@ export default function RecruitmentLanding(){return <main className={styles.page
    <div className={styles.floatingTag}><span className={styles.floatingIcon}>✓</span><span><b>Mit System starten</b><small>Von der Anmeldung bis zur Qualifizierung</small></span></div>
   </div>
  </div></div></section>
+ <section className={styles.searchIntro} aria-label="Vertriebspartner für Alarmanlagen und Sicherheitstechnik"><div className={styles.container}><div className={styles.searchIntroGrid}><div><span className={styles.kicker}>VERTRIEBSPARTNER ALARMANLAGEN WERDEN</span><h2>Dein Einstieg in den Vertrieb für Sicherheitstechnik</h2></div><div><p>Du möchtest <strong>Alarmanlagen verkaufen</strong> oder im <strong>Vertrieb für Sicherheitstechnik</strong> arbeiten? Sichere Nacht bietet einen strukturierten Einstieg in die Vermittlung moderner Ajax-Sicherheitssysteme für Privat- und Gewerbeobjekte.</p><p>Die Zusammenarbeit richtet sich an Interessierte mit einer selbstständigen, verlässlichen Arbeitsweise. Nach Registrierung, Prüfung der Unterlagen und einem verpflichtenden Vertriebstest kannst du mit freigeschalteten Partnerfunktionen arbeiten. Eine Festanstellung oder bestimmte Einnahmen werden nicht versprochen.</p><Link href="/login?register=1" className={styles.inlineLink}>Als Vertriebspartner bewerben <Arrow/></Link></div></div></div></section>
  <section className={styles.statsStrip}><div className={styles.container}><div><b>Modernes Portfolio</b><span>Ajax-Systeme für unterschiedliche Objekte</span></div><div><b>Digitale Unterstützung</b><span>Portal, Akademie und Gebietsverwaltung</span></div><div><b>Klare Freigabeprozesse</b><span>Prüfung und Qualifizierung vor Vertriebsstart</span></div></div></section>
  <section className={styles.section} id="vorteile"><div className={styles.container}><div className={styles.sectionHeading}><span className={styles.kicker}>DEINE MÖGLICHKEITEN</span><h2>Mehr als Produkte.<br/><em>Ein System für deinen Vertrieb.</em></h2><p>Wir verbinden Sicherheitstechnik mit einem klaren Partnerprozess. Du konzentrierst dich auf Beratung und passende Kundenlösungen.</p></div><div className={styles.benefitGrid}>{benefits.map(b=><article key={b.n} className={styles.benefit}><span>{b.n} / VORTEIL</span><h3>{b.title}</h3><p>{b.description}</p><div className={styles.benefitLine}></div></article>)}</div></div></section>
  <section className={styles.darkBand}><div className={styles.container}><div className={styles.split}><div><span className={styles.kicker}>DER MARKT</span><h2>Technik, die<br/><em>Menschen schützt.</em></h2><p>Ob Wohnung, Einfamilienhaus oder Gewerbe: Menschen wollen verstehen, wie sie ihre Räume und Zugänge sinnvoll sichern können. Genau hier setzt ein guter Vertriebspartner an.</p><Link href={register} className={styles.inlineLink}>Teil des Partnernetzwerks werden <Arrow/></Link></div><div className={styles.marketPanel}><span className={styles.marketTop}>WO DU ANSETZEN KANNST</span><div><span>01</span><strong>Privathaushalte</strong><small>Wohnung &amp; Eigenheim</small></div><div><span>02</span><strong>Gewerbekunden</strong><small>Büro, Laden &amp; Lager</small></div><div><span>03</span><strong>Empfehlungen</strong><small>Persönliche Kontakte &amp; passende Lösungen</small></div><p>Produkte und Eignung werden objektbezogen geprüft. Keine pauschalen Sicherheitsversprechen.</p></div></div></div></section>
