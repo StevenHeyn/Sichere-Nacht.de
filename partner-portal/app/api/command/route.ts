@@ -44,7 +44,19 @@ export async function POST(request:Request){try{const d=await body(request,12000
  case 'contact':fn='vp_save_contact';args={p_address:d.addressId,p_contact:d.id||null,p_data:d.contact};break;
  case 'delete_contact':fn='vp_delete_contact';args={p_id:d.id};break;
  case 'permission_use':fn='vp_record_permission_use';args={p_id:d.id,p_reason:str(d.reason)};break;
- case 'admin_account':fn='vp_admin_account';args={p_user:d.userId,p_action:d.operation,p_reason:str(d.reason)};break;
+ case 'admin_account':{
+  const userId=str(d.userId,40),operation=str(d.operation,24),reason=str(d.reason,500);
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId))throw new Error('Ungültige Partnerkennung. Bitte Partnerliste aktualisieren.');
+  if(operation==='approve'){
+   if(reason.trim().length<5)throw new Error('Bitte eine nachvollziehbare Prüfbegründung eingeben.');
+   const approved=await db.rpc('vp_admin_account',{p_user:userId,p_action:'approve',p_reason:reason});
+   if(approved.error){console.error('VP_APPROVAL_RPC_FAILED',{code:approved.error.code});throw new Error(approved.error.message||'Freigabe durch Datenbank abgelehnt.');}
+   const checked=await db.from('vp_accounts').select('user_id,status,approved_at').eq('user_id',userId).single();
+   if(checked.error||checked.data?.status!=='active'){console.error('VP_APPROVAL_VERIFY_FAILED',{code:checked.error?.code||'status_not_active'});throw new Error('Freigabe nicht bestätigt. Bitte den aktuellen Partnerstatus prüfen.');}
+   return json({ok:true,result:{approved:true,userId,status:'active',approvedAt:checked.data.approved_at}});
+  }
+  fn='vp_admin_account';args={p_user:userId,p_action:operation,p_reason:reason};break;
+ }
  case 'admin_learning':fn='vp_admin_learning';args={p_action:d.operation,p_data:d.data};break;
  case 'admin_merch':fn='vp_admin_merch';args={p_id:d.id,p_total:d.totalCents,p_description:str(d.description,5000)};break;
  case 'admin_area':fn='vp_admin_area';args={p_label:str(d.label,200),p_bbox:d.bbox};break;
