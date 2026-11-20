@@ -16,8 +16,8 @@ test('recruitment copy respects approval and qualification gates',()=>{
  assert.match(page,/Keine Verdienstgarantie/);
  assert.doesNotMatch(page,/garantiert.{0,20}(?:€|Umsatz|Provision)/i);
 });
-test('recruitment preview is intentionally non-indexed until go-live',()=>{
- assert.match(page,/robots:\{index:false,follow:false\}/);
+test('recruitment landing is indexable after go-live while portal remains protected',()=>{
+ assert.match(page,/robots:\{index:true,follow:true\}/);
  assert.match(page,/alternates:\{canonical:/);
 });
 test('responsive landing styles support mobile and reduced motion',()=>{
