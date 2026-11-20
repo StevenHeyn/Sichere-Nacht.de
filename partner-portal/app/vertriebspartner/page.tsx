@@ -6,7 +6,7 @@ export const metadata:Metadata={
  title:'Vertriebspartner werden | Sichere Nacht',
  description:'Starte als Vertriebspartner für Ajax-Sicherheitssysteme bei Sichere Nacht. Erfahre mehr über die Zusammenarbeit, Schulung, digitale Tools und den Bewerbungsablauf.',
  alternates:{canonical:'https://vp.sichere-nacht.de/vertriebspartner'},
- robots:{index:false,follow:false}
+ robots:{index:true,follow:true}
 };
 const register='/login?register=1';
 const benefits=[
