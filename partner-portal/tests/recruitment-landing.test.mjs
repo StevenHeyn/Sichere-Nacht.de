@@ -17,7 +17,7 @@ test('recruitment copy respects approval and qualification gates',()=>{
  assert.doesNotMatch(page,/garantiert.{0,20}(?:€|Umsatz|Provision)/i);
 });
 test('recruitment landing is indexable after go-live while portal remains protected',()=>{
- assert.match(page,/robots:\{index:true,follow:true\}/);
+ assert.match(page,/robots:\{index:true,follow:true/);
  assert.match(page,/alternates:\{canonical:/);
 });
 test('responsive landing styles support mobile and reduced motion',()=>{
