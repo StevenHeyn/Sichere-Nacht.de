@@ -4,7 +4,7 @@ import styles from './page.module.css';
 
 export const metadata:Metadata={
  title:'Vertriebspartner für Alarmanlagen werden | Sichere Nacht',
- description:'Vertriebspartner für Alarmanlagen und Sicherheitstechnik werden: Ajax-Systeme vermitteln, digital arbeiten und geschult starten. Jetzt bei Sichere Nacht bewerben.',
+ description:'Vertriebspartner für Alarmanlagen werden: Ajax-Sicherheitssysteme vermitteln, digitale Schulung und Partnerportal nutzen. Jetzt bewerben.',
  keywords:['Vertriebspartner Alarmanlagen','Sicherheitstechnik Vertriebspartner','Ajax Alarmanlagen Vertrieb','Alarmanlagen verkaufen','Vertriebspartner werden Sicherheitstechnik'],
  alternates:{canonical:'https://vp.sichere-nacht.de/vertriebspartner'},
  openGraph:{type:'website',locale:'de_DE',siteName:'Sichere Nacht',title:'Vertriebspartner für Alarmanlagen werden | Sichere Nacht',description:'Starte im Vertrieb für moderne Sicherheitstechnik: Partnerportal, Schulungen und ein klarer Bewerbungsprozess.',url:'https://vp.sichere-nacht.de/vertriebspartner'},
