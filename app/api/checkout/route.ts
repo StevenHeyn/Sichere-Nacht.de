@@ -17,7 +17,7 @@ export async function POST(request:Request){
  const secret=process.env.STRIPE_SECRET_KEY;
  const isStripeTest=Boolean(secret?.startsWith('sk_test_'));
  const isStripeLive=Boolean(secret?.startsWith('sk_live_')||secret?.startsWith('rk_live_'));
- const enabled=process.env.CHECKOUT_ENABLED==='true'&&((isStripeTest&&process.env.VERCEL_ENV==='preview'&&process.env.CHECKOUT_TEST_ENABLED==='true')||(isStripeLive&&process.env.VERCEL_ENV==='production'&&process.env.PAYMENTS_LIVE_APPROVED==='true'));
+ const enabled=process.env.CHECKOUT_ENABLED==='true'&&((isStripeTest&&process.env.VERCEL_ENV==='preview'&&process.env.CHECKOUT_TEST_ENABLED==='true')||(isStripeLive&&process.env.VERCEL_ENV==='production'&&process.env.PAYMENTS_LIVE_APPROVED==='true'&&process.env.SITE_LIVE_APPROVED==='true'));
  const base=process.env.NEXT_PUBLIC_SITE_URL;
  if(!enabled||!secret||!base||!process.env.STRIPE_WEBHOOK_SECRET)return error('Der Bezahlvorgang ist noch nicht freigeschaltet. Bitte später erneut versuchen.',503);
  let origin:string;try{origin=new URL(base).origin;if(!origin.startsWith('https://'))throw Error('non-https')}catch{return error('Shop-Adresse noch nicht freigegeben.',503)}
