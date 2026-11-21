@@ -1,3 +1,4 @@
+import {sendSignupAdminNotifications} from '../../../../lib/vp-signup-alerts.mjs';
 import {sendSmtp} from '../../../../lib/smtp.mjs';
 import {partnerEmail} from '../../../../lib/partner-email.mjs';
 import {createClient} from '@supabase/supabase-js';
@@ -18,6 +19,10 @@ export async function GET(request:Request){
  const smtpHost=process.env.SMTP_HOST,smtpPort=process.env.SMTP_PORT,smtpUser=process.env.SMTP_USER,smtpPassword=process.env.SMTP_PASSWORD;
  if(!url||!key||!smtpHost||!smtpPort||!smtpUser||!smtpPassword)return Response.json({error:'Missing server configuration'},{status:503});
  const db=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
+ // Reuse the existing daily Hobby cron for retrying failed admin signup alerts.
+ let signupAlerts={sent:0,failed:0};
+ try{signupAlerts=await sendSignupAdminNotifications({limit:5});}
+ catch(e){console.error('VP_SIGNUP_ALERT_RETRY_ERROR',{code:e instanceof Error?e.message:'unknown'});}
  const date=`${parts.year}-${parts.month}-${parts.day}`;
  const {data:accounts,error}=await db.from('vp_accounts').select('user_id,email,full_name,status,role,submitted_at,sales_passed_at,created_at,reminder_opt_out').in('status',['onboarding','active']).neq('role','admin').eq('reminder_opt_out',false).limit(500);
  if(error)return Response.json({error:'Unable to read eligible accounts'},{status:503});
@@ -40,5 +45,5 @@ export async function GET(request:Request){
    sent++;
   }catch{await db.from('vp_daily_reminders').update({status:'failed'}).eq('id',reservation.id);failed++}
  }
- return Response.json({ok:true,date,sent,failed,skipped});
+ return Response.json({ok:true,date,sent,failed,skipped,signupAlerts});
 }
