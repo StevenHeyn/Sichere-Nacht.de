@@ -1,3 +1,4 @@
+import {queueSignupAdminNotification} from '../../../lib/vp-signup-alerts.mjs';
 import {body,client,json,failure} from '../../../lib/server';
 export const dynamic='force-dynamic';
 // Use the canonical portal origin, never the untrusted incoming request Host.
@@ -9,7 +10,7 @@ export async function POST(request:Request){try{const d=await body(request),db=a
  if(action==='signup'){
  if(d.website)return json({ok:true,message:'Bitte prüfe dein E-Mail-Postfach.'});
  if(password.length<12||password.length>128||d.accountPrivacyAccepted!==true)throw new Error('Mindestens 12 Zeichen Passwort und Kenntnisnahme der Kontodatenschutzhinweise erforderlich.');
- const {error}=await db.auth.signUp({email,password,options:{emailRedirectTo:portalOrigin+'/auth/callback'}});
+ const {data:signupData,error}=await db.auth.signUp({email,password,options:{emailRedirectTo:portalOrigin+'/auth/callback'}});
  if(error){
  console.error('[vp-signup] Supabase Auth signUp failed',{code:error.code,status:error.status});
  if(error.status===429||error.code==='over_email_send_rate_limit'||error.code==='over_request_rate_limit'){
@@ -20,6 +21,14 @@ export async function POST(request:Request){try{const d=await body(request),db=a
  if(error.code==='weak_password')return json({error:'Bitte wähle ein stärkeres Passwort mit mindestens 12 Zeichen.'},400);
  if(error.code==='user_already_exists')return json({error:'Bitte nutze die Anmeldung oder „Passwort vergessen“, falls du bereits ein Konto hast.'},400);
  return json({error:'Die Registrierung konnte gerade nicht abgeschlossen werden. Bitte versuche es später erneut. Wenn das Problem bleibt, nutze den Support-Link unten auf der Seite.'},503);
+ }
+ // Supabase returns an obfuscated user with no identities for an existing address.
+ // Only notify on an actual newly created identity, never resend/reset or repeat signup.
+ const candidate=signupData?.user;
+ const created=Date.parse(candidate?.created_at||'');
+ if(candidate?.id&&candidate.email?.toLowerCase()===email&&Array.isArray(candidate.identities)&&candidate.identities.length>0&&Number.isFinite(created)&&Math.abs(Date.now()-created)<300000){
+  try{await queueSignupAdminNotification({userId:candidate.id,email});}
+  catch(err){console.error('VP_SIGNUP_ALERT_QUEUING_FAILED',{code:err instanceof Error?err.message:'unknown'});}
  }
  return json({ok:true,message:'Bitte prüfe dein E-Mail-Postfach und den Spamordner. Öffne den neuesten Bestätigungslink im selben Browser, in dem du dich registriert hast. Danach kannst du deinen Partnerantrag ausfüllen. Du musst das Konto nicht erneut erstellen.',retryAfterSeconds:60});
  }
