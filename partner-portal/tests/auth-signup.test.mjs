@@ -7,18 +7,18 @@ import ts from 'typescript';
 const source=readFileSync(new URL('../app/api/auth/route.ts',import.meta.url),'utf8');
 const code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
 async function signupWith(providerResult,overrides={},requestUrl='https://vp.sichere-nacht.de/api/auth'){
- const calls=[],exports={};
+ const calls=[],alerts=[],exports={};
  const server={
   body:request=>request.json(),
   client:async()=>({auth:{signUp:async(...args)=>{calls.push(args);return providerResult},resend:async(...args)=>{calls.push(args);return providerResult}}}),
   json:(data,status=200)=>Response.json(data,{status}),
   failure:error=>Response.json({error:error.message},{status:400})
  };
- runInNewContext(code,{exports,URL,require:name=>{assert.equal(name,'../../../lib/server');return server}});
+ runInNewContext(code,{exports,URL,require:name=>{if(name==='../../../lib/vp-signup-alerts.mjs')return {queueSignupAdminNotification:async input=>{alerts.push(input)}};assert.equal(name,'../../../lib/server');return server}});
  const response=await exports.POST(new Request(requestUrl,{
   method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'signup',email:' Partner@Example.com ',password:'a-long-test-password',accountPrivacyAccepted:true,...overrides})
  }));
- return {status:response.status,data:await response.json(),calls};
+ return {status:response.status,data:await response.json(),calls,alerts};
 }
 test('accepted signup directs the partner to email confirmation without resubmitting',async()=>{
  const result=await signupWith({data:{user:{id:'pending-user'},session:null},error:null});
@@ -97,4 +97,20 @@ test('resend redirect cannot be influenced by a preview or hostile request origi
  const result=await signupWith({error:null},{action:'resend_confirmation'},'https://attacker.example/api/auth');
  assert.equal(result.status,200);
  assert.equal(result.calls[0][0].options.emailRedirectTo,'https://vp.sichere-nacht.de/auth/callback');
+});
+
+test('one newly created Supabase identity triggers one admin notification only',async()=>{
+ const now=new Date().toISOString();
+ const res=await signupWith({data:{user:{id:'a2222222-b333-4ccc-8ddd-eeeeeeeeeeee',email:'partner@example.com',created_at:now,identities:[{id:'fresh'}]},session:null},error:null});
+ assert.equal(res.status,200);
+ assert.deepEqual(res.alerts,[{userId:'a2222222-b333-4ccc-8ddd-eeeeeeeeeeee',email:'partner@example.com'}]);
+});
+test('repeat signup with obfuscated existing user does not notify admin',async()=>{
+ const res=await signupWith({data:{user:{id:'a2222222-b333-4ccc-8ddd-eeeeeeeeeeee',email:'partner@example.com',created_at:new Date().toISOString(),identities:[]}},error:null});
+ assert.equal(res.status,200);
+ assert.equal(res.alerts.length,0);
+});
+test('resending confirmation never generates a new-registration alert',async()=>{
+ const res=await signupWith({error:null},{action:'resend_confirmation'});
+ assert.equal(res.alerts.length,0);
 });
