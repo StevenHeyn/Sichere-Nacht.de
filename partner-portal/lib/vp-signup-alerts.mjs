@@ -18,21 +18,22 @@ const smtp=()=>{
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to))throw new Error('signup_alert_destination_invalid');
  return {host,port,user,password,to};
 };
-export async function sendSignupAdminNotifications({limit=5}={}){
+export async function sendSignupAdminNotifications({limit=5,userId=null}={}){
  const db=service(),cfg=smtp();
- const {data:pending,error:listError}=await db.from('vp_signup_admin_notifications')
-  .select('user_id').in('status',['pending','failed']).lt('attempts',4)
+ let query=db.from('vp_signup_admin_notifications')
+  .select('user_id,attempts').in('status',['pending','failed']).lt('attempts',4)
   .order('created_at',{ascending:true}).limit(limit);
+ if(userId)query=query.eq('user_id',userId);
+ const {data:pending,error:listError}=await query;
  if(listError)throw new Error('signup_alert_queue_read_failed');
  let sent=0,failed=0;
  for(const item of pending||[]){
   // One atomic claim: concurrent requests cannot claim the same notification.
   const {data:claim,error:claimError}=await db.from('vp_signup_admin_notifications')
-   .update({status:'sending',last_attempt_at:new Date().toISOString(),attempts:1})
-   .eq('user_id',item.user_id).in('status',['pending','failed'])
+   .update({status:'sending',last_attempt_at:new Date().toISOString(),attempts:item.attempts+1})
+   .eq('user_id',item.user_id).eq('attempts',item.attempts).in('status',['pending','failed'])
    .select('user_id,signup_email,attempts').maybeSingle();
   if(claimError||!claim)continue;
-  // Preserve the retry counter, rather than reset it to one.
   try{
    await sendSmtp({...cfg,subject:'Sichere Nacht | Neue VP-Registrierung',html:emailContent(claim.signup_email)});
    const {error:markError}=await db.from('vp_signup_admin_notifications').update({status:'sent',sent_at:new Date().toISOString(),last_error_code:null}).eq('user_id',claim.user_id).eq('status','sending');
@@ -50,5 +51,5 @@ export async function queueSignupAdminNotification({userId,email}){
  const db=service();
  const {error}=await db.from('vp_signup_admin_notifications').insert({user_id:userId,signup_email:String(email).toLowerCase(),status:'pending'});
  if(error){if(error.code==='23505')return;throw new Error('signup_alert_queue_write_failed')}
- return sendSignupAdminNotifications({limit:1});
+ return sendSignupAdminNotifications({limit:1,userId});
 }
