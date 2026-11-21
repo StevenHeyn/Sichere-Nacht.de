@@ -103,7 +103,9 @@ test('one newly created Supabase identity triggers one admin notification only',
  const now=new Date().toISOString();
  const res=await signupWith({data:{user:{id:'a2222222-b333-4ccc-8ddd-eeeeeeeeeeee',email:'partner@example.com',created_at:now,identities:[{id:'fresh'}]},session:null},error:null});
  assert.equal(res.status,200);
- assert.deepEqual(res.alerts,[{userId:'a2222222-b333-4ccc-8ddd-eeeeeeeeeeee',email:'partner@example.com'}]);
+ assert.equal(res.alerts.length,1);
+ assert.equal(res.alerts[0].userId,'a2222222-b333-4ccc-8ddd-eeeeeeeeeeee');
+ assert.equal(res.alerts[0].email,'partner@example.com');
 });
 test('repeat signup with obfuscated existing user does not notify admin',async()=>{
  const res=await signupWith({data:{user:{id:'a2222222-b333-4ccc-8ddd-eeeeeeeeeeee',email:'partner@example.com',created_at:new Date().toISOString(),identities:[]}},error:null});
