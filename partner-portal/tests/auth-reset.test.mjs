@@ -16,7 +16,7 @@ async function resetWith(providerResult,requestUrl='https://vp.sichere-nacht.de/
   json:(data,status=200)=>Response.json(data,{status}),
   failure:error=>Response.json({error:error.message},{status:400})
  };
- runInNewContext(code,{exports,URL,require:name=>{assert.equal(name,'../../../lib/server');return server}});
+ runInNewContext(code,{exports,URL,require:name=>{if(name==='../../../lib/vp-signup-alerts.mjs')return {queueSignupAdminNotification:async()=>{throw new Error('Unexpected signup notification during password reset')}};assert.equal(name,'../../../lib/server');return server}});
  const response=await exports.POST(new Request(requestUrl,{
   method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'reset',email:' Partner@Example.com '})
  }));
