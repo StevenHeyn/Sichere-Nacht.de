@@ -34,7 +34,7 @@ grant execute on function public.vp_admin_shop_order_overview() to authenticated
 
 -- A processing flag never means a supplier order was transmitted or stock confirmed.
 create or replace function public.mark_shop_order_processing(p_session_id text,p_actor uuid)
-returns jsonb language plpgsql security invoker set search_path=public,pg_temp as $$
+returns jsonb language plpgsql security definer set search_path=public,pg_temp as $
 declare o public.orders%rowtype;
 begin
  if p_actor is null then raise exception 'Adminidentität fehlt';end if;
