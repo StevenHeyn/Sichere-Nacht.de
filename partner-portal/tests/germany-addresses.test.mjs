@@ -1,0 +1,7 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import ts from 'typescript';import{readFileSync}from'node:fs';import{runInNewContext}from'node:vm';
+const code=ts.transpileModule(readFileSync(new URL('../lib/germany-addresses.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+const area={south:53.55,west:10,north:53.56,east:10.01,locality:'Hamburg'};
+function load(data,ok=true){const exports={};runInNewContext(code,{exports,AbortSignal,fetch:async()=>({ok,text:async()=>JSON.stringify(data)})});return exports.getGermanyAddresses}
+test('national import handles building centers and preserves provider IDs',async()=>{const rows=await load({elements:[{type:'way',id:42,center:{lat:53.555,lon:10.005},tags:{'addr:street':'Teststraße','addr:housenumber':'1'}}]})(area);assert.equal(rows.length,1);assert.equal(rows[0].source_key,'osm:way:42');assert.equal(rows[0].city,'Hamburg')});
+test('partial or oversized replies never count as a completed import',async()=>{await assert.rejects(load({remark:'timeout',elements:[]})(area));await assert.rejects(load({elements:Array(501).fill({})})(area));await assert.rejects(load({},false)(area))});
+test('out-of-area geometry is excluded',async()=>{const rows=await load({elements:[{type:'node',id:1,lat:48,lon:12,tags:{'addr:street':'Test','addr:housenumber':'1'}}]})(area);assert.equal(rows.length,0)});

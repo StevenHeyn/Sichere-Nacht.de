@@ -1,0 +1,20 @@
+begin;
+update public.vp_merch_products set price_options='[{"quantity":1,"net_cents":40884,"total_cents":48652}]'::jsonb where id='strauss-workwear-set';
+select set_config('request.jwt.claim.sub',(select user_id::text from public.vp_accounts where status='active' order by created_at limit 1),true);
+do $$ declare k uuid:=gen_random_uuid();o uuid;again uuid;s jsonb:='{"winter":"L","softshell":"M","polos":"M","sweatshirt":"XL"}';begin
+ if auth.uid() is null then raise exception 'Active test context missing';end if;
+ begin perform public.vp_merch_checkout_order('strauss-workwear-set',1,gen_random_uuid());raise exception 'Missing sizes accepted';exception when others then if sqlerrm='Missing sizes accepted' then raise;end if;end;
+ begin perform public.vp_merch_checkout_order('strauss-workwear-set',2,gen_random_uuid(),s);raise exception 'Wrong quantity accepted';exception when others then if sqlerrm='Wrong quantity accepted' then raise;end if;end;
+ begin perform public.vp_merch_checkout_order('strauss-workwear-set',1,gen_random_uuid(),s||'{"winter":"invalid"}');raise exception 'Invalid size accepted';exception when others then if sqlerrm='Invalid size accepted' then raise;end if;end;
+ o:=public.vp_merch_checkout_order('strauss-workwear-set',1,k,s);
+ again:=public.vp_merch_checkout_order('strauss-workwear-set',1,k,s);
+ if o<>again then raise exception 'Duplicate order';end if;
+ if (select quote_total_cents from public.vp_merch_orders where id=o)<>48652 then raise exception 'Wrong price';end if;
+ if (select personalization->'sizes' from public.vp_merch_orders where id=o)<>s then raise exception 'Sizes not persisted';end if;
+ if (select quote_description from public.vp_merch_orders where id=o) not like '1 Set%' then raise exception 'Incorrect units';end if;
+ begin perform public.vp_merch_checkout_order('strauss-workwear-set',1,k,s||'{"winter":"S"}');raise exception 'Changed sizes accepted';exception when others then if sqlerrm='Changed sizes accepted' then raise;end if;end;
+ if has_function_privilege('anon','public.vp_merch_checkout_order(text,integer,uuid,jsonb)','execute') then raise exception 'Anonymous checkout';end if;
+ again:=public.vp_merch_checkout_order('business-card',500,gen_random_uuid());
+ if (select quote_total_cents from public.vp_merch_orders where id=again)<>2908 then raise exception 'Legacy print checkout changed';end if;
+end $$;
+rollback;

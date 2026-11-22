@@ -1,0 +1,8 @@
+'use client';
+import {useState} from 'react';
+import {type Action} from '../portal-client';
+export default function AreaPicker({act,onSelect}:{act:Action;onSelect:(id:string)=>void}){
+ const [message,setMessage]=useState(''),[busy,setBusy]=useState(false),[street,setStreet]=useState(''),[postalCode,setPostalCode]=useState('');
+ async function selectStreet(e:React.FormEvent){e.preventDefault();setBusy(true);setMessage('Alle verfügbaren Adresspunkte dieser Straße im PLZ-Bereich werden geladen …');try{const id=await act('select_street',{street,postalCode});onSelect(id);setMessage('Straße geladen. Die Adressliste ist nicht auf einen Radius begrenzt.')}catch(e){setMessage(e instanceof Error?e.message:'Straßensuche fehlgeschlagen')}finally{setBusy(false)}}
+ return <section className="card"><h2>Komplette Straße nach Postleitzahl laden</h2><p>Alle verfügbaren Straßenadressen innerhalb der angegebenen PLZ – ohne 250-, 500- oder 750-Meter-Begrenzung.</p><form onSubmit={selectStreet}><div className="formGrid"><label>Straße<input required minLength={3} maxLength={160} value={street} onChange={e=>setStreet(e.target.value)} placeholder="z. B. Dorfstraße"/></label><label>Postleitzahl<input required inputMode="numeric" pattern="[0-9]{5}" maxLength={5} value={postalCode} onChange={e=>setPostalCode(e.target.value)} placeholder="25499"/></label></div><button className="button" disabled={busy}>{busy?'Bitte warten …':'Komplette Straße laden'}</button></form><p role="status">{message}</p><p className="muted">Ortssuche und bundesweite Adresspunkte: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap-Mitwirkende</a>. Adressabdeckung kann unvollständig sein.</p></section>
+}
