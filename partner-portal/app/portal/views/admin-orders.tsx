@@ -1,13 +1,14 @@
 'use client';
 import {useMemo,useState} from 'react';
-import {type Row,eur,when} from '../portal-client';
+import {type Row,type Action,eur,when} from '../portal-client';
+import OrderFulfillment from './admin-order-actions';
 
 const payment:Record<string,string>={paid:'Bezahlt',pending:'Offen',processing:'In Bearbeitung',failed:'Fehlgeschlagen',expired:'Abgelaufen'};
 const shipping:Record<string,string>={pending:'Noch nicht übergeben',submitted:'Manuell übermittelt',confirmed:'Lieferant bestätigt',shipped:'Versandt',legacy:'Historischer Versand'};
 const merch:Record<string,string>={requested:'Angefragt',quoted:'Angeboten',accepted:'Angenommen',fulfilled:'Erledigt',cancelled:'Storniert'};
 const addr=(value:Row|undefined|null)=>{if(!value||typeof value!=='object')return '';const a=(value.address&&typeof value.address==='object'?value.address:value) as Row;return [a.line1,a.line2,[a.postal_code,a.city].filter(Boolean).join(' '),a.country].filter(Boolean).join(', ')};
 const money=(c:unknown)=>Number.isFinite(Number(c))?eur(Number(c)): '–';
-export default function AdminOrders({data}:{data:Row}){
+export default function AdminOrders({data,act,reload}:{data:Row;act:Action;reload:()=>Promise<void>}){
  const [kind,setKind]=useState('all'),[showTests,setShowTests]=useState(false),[search,setSearch]=useState('');
  const overview=(data.shop_order_overview||{}) as Row;
  const shop=(Array.isArray(overview.orders)?overview.orders:[]) as Row[];
@@ -46,7 +47,7 @@ export default function AdminOrders({data}:{data:Row}){
  </tbody></table></div>
  {!visible.length&&<p role="status">Keine passenden Bestellungen für diese Auswahl.</p>}
  <details><summary>Bestellpositionen und Lieferadressen (nur Administration)</summary><p>Für den Abgleich mit tatsächlichen Aufträgen. Das Öffnen ändert keinen Bestellstatus und überträgt keine Daten an Lieferanten.</p>
- {(kind!=='merch'?filteredShop:[]).map(o=><article className="orderRow" key={'detail-'+o.id}><strong>Alarmanlage #{o.id}{o.test_mode?' · SANDBOX':''}</strong><p>{o.customer_name||'Kunde nicht angegeben'} · {o.customer_email||'Keine E-Mail'} · VP: {partner(o)}</p><p>Lieferanschrift: {addr(o.shipping_address)||'Nicht angegeben'}</p><p>Positionen: {Array.isArray(o.items)?o.items.map((i:Row)=>[i.quantity||1,i.description||i.name||i.sku||'Artikel'].join(' × ')).join('; '):'Keine Positionen hinterlegt'}</p>{o.shipped_at&&<p>Versanddatum: {when(o.shipped_at)}</p>}</article>)}
+ {(kind!=='merch'?filteredShop:[]).map(o=><article className="orderRow" key={'detail-'+o.id}><strong>Alarmanlage #{o.id}{o.test_mode?' · SANDBOX':''}</strong><p>{o.customer_name||'Kunde nicht angegeben'} · {o.customer_email||'Keine E-Mail'} · VP: {partner(o)}</p><p>Lieferanschrift: {addr(o.shipping_address)||'Nicht angegeben'}</p><p>Positionen: {Array.isArray(o.items)?o.items.map((i:Row)=>[i.quantity||1,i.description||i.name||i.sku||'Artikel'].join(' × ')).join('; '):'Keine Positionen hinterlegt'}</p>{o.shipped_at&&<p>Versanddatum: {when(o.shipped_at)}</p>}<OrderFulfillment order={o} act={act} reload={reload}/></article>)}
  {(kind!=='shop'?filteredMerch:[]).map(o=><article className="orderRow" key={'detail-merch-'+o.id}><strong>Werbemittel {String(o.id).slice(0,8)} · {o.quantity} × {o.product_id}</strong><p>{o.customer_name||''} · {o.customer_email||''}</p><p>Lieferanschrift: {addr(o.shipping_details)||'Nicht angegeben'}</p><p>{o.quote_description||''}</p></article>)}
  </details>
  </section>;
