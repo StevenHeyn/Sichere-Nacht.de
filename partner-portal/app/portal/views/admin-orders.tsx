@@ -17,7 +17,8 @@ export default function AdminOrders({data}:{data:Row}){
  const q=search.trim().toLocaleLowerCase('de-DE');
  const filteredShop=useMemo(()=>shop.filter(o=>(showTests||!o.test_mode)&&(!q||[o.id,o.customer_name,o.customer_email,o.vp_id,o.partner_name,o.invoice_number].some(v=>String(v||'').toLocaleLowerCase('de-DE').includes(q)))),[shop,showTests,q]);
  const filteredMerch=useMemo(()=>printing.filter(o=>!q||[o.id,o.product_id,o.customer_name,o.customer_email,accounts.find(a=>a.user_id===o.user_id)?.full_name].some(v=>String(v||'').toLocaleLowerCase('de-DE').includes(q))),[printing,accounts,q]);
- const visible:Row[]=[...(kind!=='merch'?filteredShop.map(o=>({...o,_type:'shop'})):[]),...(kind!=='shop'?filteredMerch.map(o=>({...o,_type:'merch'})):[])].sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+ const visible:Row[]=[...(kind!=='merch'?filteredShop.map(o=>({...o,_type:'shop'})):[]),...(kind!=='shop'?filteredMerch.map(o=>({...o,_type:'merch'})):[])];
+ visible.sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
  const liveTotal=Number(overview.live_count||0),tests=Number(overview.test_count||0),merchPaid=printing.filter(o=>o.payment_status==='paid').length;
  return <section className="card" id="admin-orders">
  <h2>Bestellübersicht</h2>
