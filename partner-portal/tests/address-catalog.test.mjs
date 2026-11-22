@@ -1,0 +1,10 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {parseBounds,tileOf,tileKeys,decodePoint,mergePoints,clustersFor} from '../lib/address-catalog.mjs';
+const point=(key='osm:node:1')=>decodePoint([key,'Dorfstraße','1','Tangstedt','25499',9.85,53.68]);
+test('map bounds reject non-finite, reversed and foreign ranges',()=>{for(const b of ['', '5,47,16,NaN','16,47,5,56','0,47,16,56','5,47,16,100'])assert.throws(()=>parseBounds(b));assert.deepEqual(parseBounds('9,53,10,54'),[9,53,10,54])});
+test('tile request contains both edges including boundary crossing',()=>{const b=[9.84,53.67,9.9,53.7],keys=tileKeys(b);for(const [lon,lat] of [[b[0],b[1]],[b[2],b[3]]])assert.ok(keys.some(k=>JSON.stringify(k)===JSON.stringify(tileOf(lon,lat))))});
+test('qualification and block survive a changed provider row',()=>{const p=point(),edit={...p,id:'existing',status:'do_not_contact',blocked:true,households:4};const [r]=mergePoints([{...p,city:'Updated source city'}],[edit]);assert.equal(r.id,'existing');assert.equal(r.blocked,true);assert.equal(r.households,4);assert.equal(r.status,'do_not_contact')});
+test('old manual/OSM address links to one existing qualification',()=>{const p=point(),edit={...p,id:'manual',source_key:'manual:test',status:'qualified'};const result=mergePoints([p,point('osm:way:2')],[edit]);assert.equal(result.length,1);assert.equal(result[0].id,'manual')});
+test('neighboring postcodes do not inherit each other’s edits; manual points remain visible',()=>{const p=point(),edit={...p,id:'other',source_key:'manual:2',postal_code:'25498',status:'customer'};const result=mergePoints([p],[edit]);assert.equal(result.length,2);assert.equal(result[0].status,'new')});
+test('overview clusters preserve total counts within displayed region',()=>{const a={...point(),count:10},b={...point(),longitude:9.86,count:30};const result=clustersFor([a,b,{...b,longitude:14,count:999}],parseBounds('9,53,10,54'),6);assert.equal(result.reduce((n,p)=>n+p.count,0),40);assert.ok(result.every(p=>p.longitude>=9&&p.longitude<=10))});
