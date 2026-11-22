@@ -42,7 +42,7 @@ begin
  if not found or o.test_mode or o.status<>'paid' then raise exception 'Nur echte bezahlte Bestellungen können bearbeitet werden';end if;
  if o.shipped_at is not null or o.fulfillment_status='shipped' then raise exception 'Bestellung bereits versendet';end if;
  if o.fulfillment_status='processing' then return jsonb_build_object('status','processing','already_marked',true);end if;
- if o.fulfillment_status not in ('pending',null) then raise exception 'Statuswechsel nicht erlaubt';end if;
+ if o.fulfillment_status is distinct from 'pending' then raise exception 'Statuswechsel nicht erlaubt';end if;
  update public.orders set fulfillment_status='processing',updated_at=now() where id=o.id;
  insert into public.supplier_fulfillment_events(order_id,action,reference)
  values(o.id,'processing','admin-user:'||p_actor::text);
