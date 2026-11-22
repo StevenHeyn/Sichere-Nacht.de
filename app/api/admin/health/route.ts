@@ -65,7 +65,7 @@ export async function GET(request:Request){
   database,stripe,mail,
   webhookSecretConfigured:checkEnv('STRIPE_WEBHOOK_SECRET'),
   adminConfigured:checkEnv('ORDERS_ADMIN_TOKEN'),
-  invoiceDetailsConfigured:['INVOICE_COMPANY_NAME','INVOICE_COMPANY_STREET','INVOICE_COMPANY_CITY','INVOICE_VAT_ID','INVOICE_REGISTRY','INVOICE_CONTACT_EMAIL'].every(checkEnv),
+  invoiceDetailsConfigured:['INVOICE_COMPANY_NAME','INVOICE_COMPANY_STREET','INVOICE_COMPANY_CITY','INVOICE_VAT_ID','INVOICE_TAX_NUMBER','INVOICE_REGISTRY','INVOICE_CONTACT_EMAIL'].every(checkEnv),
   gates,
   note:'Technischer Read-only-Test. Kein Beweis für Webhook-Zustellung, Steuern, Vertragsrecht oder erfolgreiche Zahlung.'
  },{headers:{'cache-control':'no-store'}});
