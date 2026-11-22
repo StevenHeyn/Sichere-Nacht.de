@@ -19,6 +19,23 @@ export async function POST(request:Request){try{const d=await body(request,12000
   }catch(e){console.error('VP_SMTP_TEST_FAILED',e instanceof Error?e.message:'unknown');throw new Error('IONOS hat den SMTP-Test nicht erfolgreich angenommen. Bitte Serverprotokoll prüfen.');}
   return json({ok:true,result:{accepted:true,recipient:userEmail}});
  }
+ case 'admin_order_fulfillment':{
+  if(account.role!=='admin'||account.status!=='active')throw new Error('Nur aktive Administratoren können Bestellungen bearbeiten.');
+  const sessionId=str(d.sessionId,130),action=str(d.operation,30);
+  if(!/^cs_live_[A-Za-z0-9]+$/.test(sessionId)||!['processing','draft','submitted','confirmed','shipped','retry_invoice'].includes(action))throw new Error('Ungültige Bestellaktion.');
+  const {data:session,error:sessionError}=await db.auth.getSession();
+  if(sessionError||!session.session?.access_token||session.session.user.id!==user.id)throw new Error('Sitzung abgelaufen. Bitte erneut anmelden.');
+  const upstream=await fetch('https://sichere-nacht.de/api/admin/portal-fulfillment',{
+   method:'POST',headers:{Authorization:'Bearer '+session.session.access_token,'content-type':'application/json'},
+   body:JSON.stringify({sessionId,action,reference:str(d.reference,240),stockEvidence:str(d.stockEvidence,240),
+      stockConfirmed:d.stockConfirmed===true,complete:d.complete===true,
+      dispatchedAt:str(d.dispatchedAt,45)||undefined,carrier:str(d.carrier,80),tracking:str(d.tracking,160)}),
+   cache:'no-store',signal:AbortSignal.timeout(25000)
+  });
+  const outcome=await upstream.json().catch(()=>null);
+  if(!upstream.ok)throw new Error(typeof outcome?.error==='string'?outcome.error:'Bestellverarbeitung momentan nicht verfügbar.');
+  return json({ok:true,result:outcome});
+ }
  case 'admin_job_cancel':fn='vp_cancel_installation_job';args={p_id:d.id};break;
  case 'reminder_preference':fn='vp_set_reminder_opt_out';args={p_opt_out:d.optOut===true};break;
  case 'sales_quiz':fn='vp_submit_sales_quiz';args={p_answers:d.answers,p_version:d.version};break;
