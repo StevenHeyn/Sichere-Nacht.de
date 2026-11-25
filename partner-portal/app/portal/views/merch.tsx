@@ -50,6 +50,7 @@ export default function Merch({data,act,reload}:{data:Row;act:Action;reload:()=>
         const sizesReady=!workwear||sizeFields.every(([key])=>sizeChoices.includes(chosenSizes[key]));
         const options:PriceOption[] = Array.isArray(p.price_options) ? p.price_options : [];
         const quantity = qty[p.id] ?? options[0]?.quantity ?? 1;
+        const quantityLimit = p.id==='qr-flyer' ? 55000 : 10000;
         const selected = custom[p.id]?undefined:options.find(option => option.quantity === quantity);
         return <article className="card merchCard" key={p.id}>
           <p className="eyebrow">{p.kind==='flyer'?'PRINT':p.kind==='card'?'PERSÖNLICH':'TEAMWEAR'}</p>
@@ -74,9 +75,9 @@ export default function Merch({data,act,reload}:{data:Row;act:Action;reload:()=>
                 <small>zzgl. 19 % MwSt. · Standardversand Deutschland inklusive</small>
                 <small>{eur(selected.total_cents-net(selected))} MwSt. · <b>{eur(selected.total_cents)} Gesamtbetrag</b></small>
               </div>}
-            </> : <label>Menge (Stück)<input type="number" min={1} max={10000} value={quantity} onChange={e=>setQty({...qty,[p.id]:Number(e.target.value)})}/></label>}
+            </> : <label>Menge (Stück)<input type="number" min={1} max={quantityLimit} value={quantity} onChange={e=>setQty({...qty,[p.id]:Number(e.target.value)})}/></label>}
             {workwear&&<fieldset className="merchSizes"><legend>Deine Größen</legend><div className="merchSizeGrid">{sizeFields.map(([key,label])=><label key={key}>{label}<select value={chosenSizes[key]} onChange={e=>setSizes({...sizes,[key]:e.target.value})}><option value="">Größe wählen</option>{sizeChoices.map(size=><option key={size}>{size}</option>)}</select></label>)}</div><small>Die drei Poloshirts werden in derselben gewählten Größe geliefert.</small></fieldset>}
-            <button className="button full" disabled={busy||(!!selected&&!sizesReady)||!Number.isInteger(quantity)||quantity<1||quantity>10000} onClick={()=>selected?pay({productId:p.id,quantity,sizes:workwear?chosenSizes:{}}):act('merch_request',{productId:p.id,quantity}).catch(()=>{})}>
+            <button className="button full" disabled={busy||(!!selected&&!sizesReady)||!Number.isInteger(quantity)||quantity<1||quantity>quantityLimit} onClick={()=>selected?pay({productId:p.id,quantity,sizes:workwear?chosenSizes:{}}):act('merch_request',{productId:p.id,quantity}).catch(()=>{})}>
               {selected ? (workwear?'Einzelset bestellen':'Paket bestellen')+' · '+eur(selected.total_cents) : 'Angebot anfragen'}
             </button>
             {!!options.length&&<button className="textButton" disabled={busy} onClick={()=>{setCustom({...custom,[p.id]:!custom[p.id]});setQty({...qty,[p.id]:options[0].quantity})}}>{custom[p.id]?'Zurück zur Auswahl':workwear?'Andere Größe oder mehrere Sets anfragen':'Andere Stückzahl anfragen'}</button>}
