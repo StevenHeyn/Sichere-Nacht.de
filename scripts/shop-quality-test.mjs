@@ -14,3 +14,26 @@ test('no global Stripe script and no imaginary customer ratings',()=>{assert.doe
 test('live gates and server price source retained',()=>{const r=read('app/api/checkout/route.ts');for(const x of ['PAYMENTS_LIVE_APPROVED','CHECKOUT_TEST_ENABLED','priceBySku','checkSystem','parseReferral','activePortalPartner'])assert.ok(r.includes(x));assert.match(r,/const shipping=990/);assert.match(r,/installation===true/)});
 test('room selections not silently downscaled; montage not charged in cart',()=>{const s=read('app/konfigurator/page.tsx');assert.match(s,/rooms\.filter\(r=>r.motion\)\.length/);assert.doesNotMatch(s,/motionRooms\*0\.|rooms\*0\./);assert.match(read('app/warenkorb/page.tsx'),/total=subtotal\+shipping/)});
 test('metadata blocks preview and internal indexing',()=>{assert.match(read('lib/seo.ts'),/VERCEL_ENV==='production'/);assert.match(read('app/robots.ts'),/\/admin\//);assert.match(read('app/admin/layout.tsx'),/index:false/);assert.match(read('app/bestellung/layout.tsx'),/index:false/);assert.match(read('app/shop/\[sku\]/page.tsx'),/safeJson/)});
+
+test('catalog cameras and video doorbells can be purchased without an alarm system', () => {
+  const products = JSON.parse(read('products.json'));
+  const cameras = products.filter(p => /^Ajax (?:BulletCam|DomeCam|TurretCam|IndoorCam|DoorBell)\b/.test(p.name));
+  assert.ok(cameras.length > 0);
+  for (const camera of cameras) {
+    const advice = productAdvice(camera);
+    assert.equal(advice.reviewed, true, camera.sku);
+    assert.equal(advice.standaloneVideo, true, camera.sku);
+    const check = checkSystem([{product: camera, quantity: 1}]);
+    assert.deepEqual(check.errors, []);
+    assert.deepEqual(check.warnings, []);
+  }
+  const camera = cameras[0];
+  assert.equal(productAdvice({...camera, sku: 'UNREVIEWED-VARIANT'}).reviewed, false);
+  for (const sku of ['BMC-003', '134722.125.BL', '168237.371.BL', '135579.214.BL1']) {
+    const other = products.find(p => p.sku === sku);
+    assert.ok(other);
+    assert.equal(productAdvice(other).reviewed, false, other.name);
+  }
+  const mixedCart = [{product: camera, quantity: 1}, line('38193.09.WH1', 'Ajax MotionProtect')];
+  assert.ok(checkSystem(mixedCart).warnings.some(w => w.includes('Zentrale')));
+});
