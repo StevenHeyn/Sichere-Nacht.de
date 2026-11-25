@@ -60,15 +60,9 @@ export default function Merch({data,act,reload}:{data:Row;act:Action;reload:()=>
         return <article className="card merchCard" key={p.id}>
           <p className="eyebrow">{p.kind==='flyer'?'PRINT':p.kind==='card'?'PERSÖNLICH':'TEAMWEAR'}</p>
           <h2>{p.title}</h2>
-          {flyer ? <figure className="merchPreview">
-            <div style={{position:'relative',overflow:'hidden',borderRadius:12,background:'#e8ebed'}}>
-              <img src="/images/merch/flyer-din-a5-vorschau.png" alt="Ursprüngliches DIN-A5-Flyerdesign von Sichere Nacht als unverbindliche Mustervorschau" loading="eager" style={{display:'block',width:'100%',height:'auto',maxHeight:'none',objectFit:'contain'}}/>
-              <span aria-hidden="true" style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%) rotate(-20deg)',fontWeight:800,fontSize:'clamp(26px,7vw,50px)',letterSpacing:4,color:'rgba(18,35,50,.42)',textShadow:'0 1px 3px rgba(255,255,255,.7)',pointerEvents:'none'}}>MUSTER</span>
-            </div>
-            <figcaption>Originales Flyerdesign als Muster. Name, Telefonnummer und individueller Empfehlungs-QR erscheinen ausschließlich in der internen Druckvorlage nach der Bestellung. Keine druckfertige Datei.</figcaption>
-          </figure> : previewPath && <figure className="merchPreview">
-            <a href={previewPath} target="_blank" rel="noopener noreferrer" aria-label={p.title+' – Designvorschau vergrößern'}>
-              <img src={previewPath} alt={workwear?'Sechs Teile: eine Winterjacke, eine Softshelljacke, ein Pullover und drei Poloshirts':p.title+' – Vorder- und Rückseite im Sichere-Nacht-Design'} loading="lazy"/>
+          {p.image_path && <figure className="merchPreview">
+            <a href={p.image_path} target="_blank" rel="noopener noreferrer" aria-label={p.title+' – Designvorschau vergrößern'}>
+              <img src={p.image_path} alt={workwear?'Sechs Teile: eine Winterjacke, eine Softshelljacke, ein Pullover und drei Poloshirts':p.title+' – Vorder- und Rückseite im Sichere-Nacht-Design'} loading="lazy"/>
             </a>
             <figcaption>{workwear?'Set-Visualisierung · Alle sechs Teile mit Rückenlogo. Die genaue Druckansicht folgt vor Produktion.':'Designvorschau · QR-Code und Kontaktdaten werden für dich personalisiert.'}</figcaption>
           </figure>}
