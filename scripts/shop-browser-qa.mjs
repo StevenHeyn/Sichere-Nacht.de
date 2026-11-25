@@ -27,6 +27,19 @@ try{
   await context.close();
  }
  const ctx=await browser.newContext({viewport:{width:1440,height:1000}}),p=await ctx.newPage();await p.goto(base+'/shop');await p.getByLabel('Produkt, Artikelnummer oder EAN').fill('38198.02.WH1');assert.equal(await p.locator('.qualityProduct').count(),1);await p.getByLabel('Vergleichen (max. 3)').check();assert.equal(await p.locator('.productCompare').count(),1);report.functional.searchAndCompare=true;
+
+ await p.goto(base+'/shop/kategorie/video');
+ await p.getByLabel('Produkt, Artikelnummer oder EAN').fill('64927.197.WH1');
+ const cameraCard=p.locator('.qualityProduct').filter({hasText:'64927.197.WH1'});
+ await cameraCard.getByRole('button',{name:'In den Warenkorb'}).click();
+ await p.getByRole('link',{name:'Warenkorb öffnen'}).waitFor();
+ await p.goto(base+'/shop/111566.303.WH1');
+ await p.getByRole('button',{name:'In den Warenkorb'}).click();
+ await p.getByRole('link',{name:'Zum Warenkorb'}).click();
+ await p.locator('.recProduct').filter({hasText:'111566.303.WH1'}).waitFor();
+ assert.equal(await p.locator('.recProduct').filter({hasText:'64927.197.WH1'}).count(),1);
+ assert.equal(await p.locator('.planWarnings').count(),0);
+ report.functional.cameraOrders=true;
  await p.goto(base+'/warenkorb');await p.evaluate(c=>localStorage.setItem('sichere-nacht-cart-v1',JSON.stringify(c)),cart);await p.reload();await p.locator('input[value="b2b"]').check();assert.equal(await p.locator('#buyer-company').isVisible(),true);assert.ok((await p.locator('body').innerText()).includes('kein freiwilliges Widerrufsrecht'));await p.locator('#buyer-company').fill('Testunternehmen GmbH');report.functional.businessSelection=true;
  await p.goto(base+'/?vp=VP-TEST');assert.equal(await p.evaluate(()=>localStorage.getItem('sichere-nacht-referral-v2')),null);await p.getByRole('button',{name:'Empfehlung speichern',exact:true}).click();assert.ok(await p.evaluate(()=>localStorage.getItem('sichere-nacht-referral-v2')));await p.reload();await p.getByRole('button',{name:'Empfehlungs-Einstellungen',exact:true}).click();await p.getByRole('button',{name:'Nicht speichern / widerrufen',exact:true}).click();assert.equal(await p.evaluate(()=>localStorage.getItem('sichere-nacht-referral-v2')),null);report.functional.referralConsentAndRevocation=true;
  await p.goto(base+'/konfigurator');await p.getByRole('button',{name:'Mengen direkt erfassen',exact:true}).click();await p.getByLabel('Räume mit Bewegungserkennung').fill('6');const item=p.locator('.recProduct').filter({hasText:'MotionCam'});assert.equal(await item.locator('input[type=number]').inputValue(),'6');await item.locator('input[type=number]').fill('4');assert.equal(await item.locator('input[type=number]').inputValue(),'4');report.functional.roomCountsAndManualQuantities=true;

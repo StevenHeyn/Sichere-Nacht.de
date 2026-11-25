@@ -1,3 +1,4 @@
+import './prepare-public-catalog.mjs';
 import {test,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,writeFileSync,mkdirSync,rmSync,copyFileSync} from 'node:fs';
