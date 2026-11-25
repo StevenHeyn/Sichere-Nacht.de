@@ -34,6 +34,6 @@ export async function GET(){
       <text x="343" y="834" fill="#334155" font-family="Arial,sans-serif" font-size="21">und Kontakt aufnehmen.</text>
       <text x="54" y="1016" fill="#cbd5e1" font-family="Arial,sans-serif" font-size="17">Personalisierte Vorschau · Druckdaten erst nach Freigabe</text>
     </svg>`;
-    return new Response(svg,{headers:{'content-type':'image/svg+xml; charset=utf-8','content-disposition':'inline; filename="Sichere-Nacht-Flyer-Vorschau.svg"','cache-control':'private, no-store, max-age=0','x-content-type-options':'nosniff','content-security-policy':"default-src 'none'; img-src data:; style-src 'unsafe-inline'; sandbox"}});
+    return new Response(svg,{headers:{'content-type':'image/svg+xml; charset=utf-8','content-disposition':'inline; filename="Sichere-Nacht-Flyer-Vorschau.svg"','cache-control':'private, no-store, max-age=0','x-content-type-options':'nosniff','content-security-policy':"default-src 'none'; img-src data:; style-src 'unsafe-inline'",'vary':'Cookie','referrer-policy':'no-referrer'}});
   }catch(e){return failure(e)}
 }

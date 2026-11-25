@@ -49,6 +49,7 @@ export async function POST(request:Request){try{const d=await body(request,12000
  case 'invite':fn='vp_invite';args={p_name:str(d.name,160),p_email:str(d.email,200)};break;
  case 'book':fn='vp_book_training';args={p_slot:d.slotId,p_cancel:d.cancel===true};break;
  case 'installer':fn='vp_request_installer';args={};break;
+ case 'flyer_contact':fn='vp_update_flyer_contact';args={p_name:str(d.name,101),p_phone:str(d.phone,41)};break;
  case 'merch_request':fn='vp_merch_request';args={p_product:d.productId,p_quantity:d.quantity};break;
  case 'merch_accept':if(d.accept!==true)throw new Error('Kostenpflichtiges Angebot ausdrücklich bestätigen.');fn='vp_merch_accept';args={p_id:d.id,p_version:d.version};break;
  case 'create_address':fn='vp_create_map_address';args={p_data:d.address};break;

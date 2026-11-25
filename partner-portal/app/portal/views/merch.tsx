@@ -15,6 +15,8 @@ async function paymentRequest(data:Row){const r=await fetch('/api/merch-checkout
 
 export default function Merch({data,act,reload}:{data:Row;act:Action;reload:()=>Promise<void>}) {
   const [sizes,setSizes]=useState<Record<string,string>>({});
+  const [contact,setContact]=useState({name:String(data.account.full_name||''),phone:String(data.account.phone||'')});
+  const [savingContact,setSavingContact]=useState(false);
   const [qty,setQty] = useState<Record<string,number>>({});
   const [custom,setCustom]=useState<Record<string,boolean>>({}),[busy,setBusy]=useState(false),[notice,setNotice]=useState('');
   const locked=useRef(false),keys=useRef<Record<string,string>>({}),reloadRef=useRef(reload);reloadRef.current=reload;
@@ -47,7 +49,8 @@ export default function Merch({data,act,reload}:{data:Row;act:Action;reload:()=>
       {(data.products||[]).filter((p:Row)=>p.id!=='team-clothing').map((p:Row) => {
         const workwear=p.id==='strauss-workwear-set';
         const flyer=p.id==='qr-flyer';
-        const previewPath=flyer?'/api/merch-flyer-preview':p.image_path;
+        const contactReady=!!String(data.account.full_name||'').trim()&&!!String(data.account.phone||'').trim();
+        const previewPath=flyer&&contactReady?'/api/merch-flyer-preview':p.image_path;
         const chosenSizes=Object.fromEntries(sizeFields.map(([key])=>[key,sizes[key]??(sizeChoices.includes(data.account.clothing_size)?data.account.clothing_size:'')]));
         const sizesReady=!workwear||sizeFields.every(([key])=>sizeChoices.includes(chosenSizes[key]));
         const options:PriceOption[] = Array.isArray(p.price_options) ? p.price_options : [];
@@ -59,12 +62,12 @@ export default function Merch({data,act,reload}:{data:Row;act:Action;reload:()=>
           <h2>{p.title}</h2>
           {previewPath && <figure className="merchPreview">
             <a href={previewPath} target="_blank" rel="noopener noreferrer" aria-label={p.title+' – Designvorschau vergrößern'}>
-              <img src={previewPath} alt={workwear?'Sechs Teile: eine Winterjacke, eine Softshelljacke, ein Pullover und drei Poloshirts':flyer?'Personalisierte Flyer-Vorschau mit Name, Telefonnummer und Empfehlungs-QR':p.title+' – Vorder- und Rückseite im Sichere-Nacht-Design'} loading="lazy"/>
+              <img src={previewPath} onError={e=>{if(flyer&&p.image_path&&e.currentTarget.src.indexOf(p.image_path)<0){e.currentTarget.onerror=null;e.currentTarget.src=p.image_path;}}} alt={workwear?'Sechs Teile: eine Winterjacke, eine Softshelljacke, ein Pullover und drei Poloshirts':flyer?'Personalisierte Flyer-Vorschau mit Name, Telefonnummer und Empfehlungs-QR':p.title+' – Vorder- und Rückseite im Sichere-Nacht-Design'} loading="lazy"/>
             </a>
             <figcaption>{workwear?'Set-Visualisierung · Alle sechs Teile mit Rückenlogo. Die genaue Druckansicht folgt vor Produktion.':flyer?'Persönliche Vorschau mit Name, Telefonnummer und Empfehlungs-QR. Die finale Druckansicht wird vor Produktion freigegeben.':'Designvorschau · QR-Code und Kontaktdaten werden für dich personalisiert.'}</figcaption>
           </figure>}
           <ul className="merchFeatures">{String(p.description).split(/\n+/).filter(Boolean).map((line,i)=><li key={i}>{line.replace(/^[•\-]\s*/,'')}</li>)}</ul>
-          {flyer&&<p className="merchFeatures">Auf deinem Flyer: <strong>{data.account.full_name}</strong> · <strong>{data.account.phone}</strong>. Diese Kontaktdaten werden bei der Bestellung automatisch gespeichert. Bitte prüfe sie vor dem Bestellen.</p>}
+          {flyer&&(contactReady?<p className="merchFeatures">Auf deinem Flyer: <strong>{data.account.full_name}</strong> · <strong>{data.account.phone}</strong>. Die Kontaktdaten werden bei der Bestellung automatisch gespeichert. Bitte prüfe sie vor dem Bestellen.</p>:<div className="notice"><p role="alert"><strong>Kontaktdaten fehlen.</strong> Bitte ergänze Vor- und Nachnamen sowie Telefonnummer, bevor du personalisierte Flyer bestellen kannst.</p><form onSubmit={async e=>{e.preventDefault();if(savingContact)return;setSavingContact(true);try{await act('flyer_contact',{name:contact.name,phone:contact.phone});await reload();setNotice('Kontaktdaten gespeichert. Die Flyer-Vorschau wurde aktualisiert.')}catch(error){setNotice(error instanceof Error?error.message:'Kontaktdaten konnten nicht gespeichert werden.')}finally{setSavingContact(false)}}}><label>Vor- und Nachname<input required minLength={3} maxLength={100} value={contact.name} onChange={e=>setContact({...contact,name:e.target.value})}/></label><label>Telefonnummer<input required type="tel" minLength={6} maxLength={40} value={contact.phone} onChange={e=>setContact({...contact,phone:e.target.value})}/></label><button className="button" type="submit" disabled={savingContact}>{savingContact?'Wird gespeichert …':'Kontaktdaten speichern'}</button></form></div>)}
           <div className="merchPurchase">
             {options.length > 0 && !custom[p.id] ? <>
               <label>{workwear?'Komplettset':'Druckpaket'}
@@ -80,7 +83,7 @@ export default function Merch({data,act,reload}:{data:Row;act:Action;reload:()=>
               </div>}
             </> : <label>Menge (Stück)<input type="number" min={1} max={quantityLimit} value={quantity} onChange={e=>setQty({...qty,[p.id]:Number(e.target.value)})}/></label>}
             {workwear&&<fieldset className="merchSizes"><legend>Deine Größen</legend><div className="merchSizeGrid">{sizeFields.map(([key,label])=><label key={key}>{label}<select value={chosenSizes[key]} onChange={e=>setSizes({...sizes,[key]:e.target.value})}><option value="">Größe wählen</option>{sizeChoices.map(size=><option key={size}>{size}</option>)}</select></label>)}</div><small>Die drei Poloshirts werden in derselben gewählten Größe geliefert.</small></fieldset>}
-            <button className="button full" disabled={busy||(!!selected&&!sizesReady)||!Number.isInteger(quantity)||quantity<1||quantity>quantityLimit} onClick={()=>selected?pay({productId:p.id,quantity,sizes:workwear?chosenSizes:{}}):act('merch_request',{productId:p.id,quantity}).catch(()=>{})}>
+            <button className="button full" disabled={busy||(flyer&&!contactReady)||(!!selected&&!sizesReady)||!Number.isInteger(quantity)||quantity<1||quantity>quantityLimit} onClick={()=>selected?pay({productId:p.id,quantity,sizes:workwear?chosenSizes:{}}):act('merch_request',{productId:p.id,quantity}).catch(()=>{})}>
               {selected ? (workwear?'Einzelset bestellen':'Paket bestellen')+' · '+eur(selected.total_cents) : 'Angebot anfragen'}
             </button>
             {!!options.length&&<button className="textButton" disabled={busy} onClick={()=>{setCustom({...custom,[p.id]:!custom[p.id]});setQty({...qty,[p.id]:options[0].quantity})}}>{custom[p.id]?'Zurück zur Auswahl':workwear?'Andere Größe oder mehrere Sets anfragen':'Andere Stückzahl anfragen'}</button>}
