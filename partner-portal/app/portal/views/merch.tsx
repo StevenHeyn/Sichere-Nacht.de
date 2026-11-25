@@ -61,26 +61,11 @@ export default function Merch({data,act,reload}:{data:Row;act:Action;reload:()=>
           <p className="eyebrow">{p.kind==='flyer'?'PRINT':p.kind==='card'?'PERSÖNLICH':'TEAMWEAR'}</p>
           <h2>{p.title}</h2>
           {flyer ? <figure className="merchPreview">
-            <div style={{background:'#09172a',color:'#fff',padding:'clamp(20px,5vw,38px)',borderRadius:14,display:'flex',flexDirection:'column',gap:16,aspectRatio:'148 / 210',boxSizing:'border-box',minWidth:0,overflow:'hidden',position:'relative'}} aria-label="Neutrales Flyermuster ohne personenbezogene Daten oder funktionierenden QR-Code">
-              <strong style={{fontSize:'clamp(15px,4vw,24px)',letterSpacing:1}}>SICHERE NACHT</strong>
-              <span style={{fontSize:11,letterSpacing:2,color:'#fbbf24'}}>SICHERHEIT ZUHAUSE</span>
-              <div style={{marginTop:12}}>
-                <strong style={{display:'block',fontSize:'clamp(22px,6vw,40px)',lineHeight:1.15}}>Dein Zuhause.<br/>Deine Sicherheit.</strong>
-                <p style={{fontSize:'clamp(12px,3vw,17px)',color:'#cbd5e1'}}>Moderne Alarmtechnik von AJAX. Jetzt informieren und beraten lassen.</p>
-              </div>
-              <div style={{background:'#fff',color:'#071324',borderRadius:12,padding:'clamp(14px,4vw,25px)',marginTop:'auto',minWidth:0}}>
-                <strong style={{display:'block',fontSize:'clamp(10px,2.8vw,16px)',marginBottom:12}}>PERSÖNLICHE KONTAKTDATEN</strong>
-                <strong style={{display:'block',overflowWrap:'anywhere',fontSize:'clamp(17px,4vw,26px)'}}>Name nach Bestellung</strong>
-                <span style={{display:'block',overflowWrap:'anywhere',fontSize:'clamp(15px,3.5vw,22px)',marginTop:5}}>Telefonnummer nach Bestellung</span>
-                <div style={{display:'flex',alignItems:'center',gap:12,marginTop:14}}>
-                  <div aria-label="QR-Platzhalter, nicht scannbar" style={{width:'45%',maxWidth:180,aspectRatio:'1 / 1',background:'#e2e8f0',display:'grid',placeItems:'center',border:'2px dashed #94a3b8',borderRadius:6,color:'#334155',fontSize:14,fontWeight:700}}>QR-MUSTER</div>
-                  <span style={{fontSize:'clamp(11px,2.7vw,16px)',lineHeight:1.4}}>Persönlicher QR-Code erst in der internen Druckdatei</span>
-                </div>
-              </div>
-              <span style={{position:'absolute',top:'49%',left:'50%',transform:'translate(-50%,-50%) rotate(-18deg)',fontSize:'clamp(28px,9vw,65px)',fontWeight:900,letterSpacing:5,opacity:.3,pointerEvents:'none'}}>MUSTER</span>
-              <small style={{fontSize:10,color:'#cbd5e1'}}>Unverbindliches Designmuster · Nicht für den Druck geeignet</small>
+            <div style={{position:'relative',overflow:'hidden',borderRadius:12,background:'#e8ebed'}}>
+              <img src="/images/merch/flyer-din-a5-vorschau.png" alt="Ursprüngliches DIN-A5-Flyerdesign von Sichere Nacht als unverbindliche Mustervorschau" loading="eager" style={{display:'block',width:'100%',height:'auto',maxHeight:'none',objectFit:'contain'}}/>
+              <span aria-hidden="true" style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%) rotate(-20deg)',fontWeight:800,fontSize:'clamp(26px,7vw,50px)',letterSpacing:4,color:'rgba(18,35,50,.42)',textShadow:'0 1px 3px rgba(255,255,255,.7)',pointerEvents:'none'}}>MUSTER</span>
             </div>
-            <figcaption>Neutrale Designvorschau ohne Namen, Telefonnummer oder echten QR-Code. Die interne personalisierte Druckvorlage wird erst nach bezahlter Bestellung erstellt.</figcaption>
+            <figcaption>Originales Flyerdesign als Muster. Name, Telefonnummer und individueller Empfehlungs-QR erscheinen ausschließlich in der internen Druckvorlage nach der Bestellung. Keine druckfertige Datei.</figcaption>
           </figure> : previewPath && <figure className="merchPreview">
             <a href={previewPath} target="_blank" rel="noopener noreferrer" aria-label={p.title+' – Designvorschau vergrößern'}>
               <img src={previewPath} alt={workwear?'Sechs Teile: eine Winterjacke, eine Softshelljacke, ein Pullover und drei Poloshirts':p.title+' – Vorder- und Rückseite im Sichere-Nacht-Design'} loading="lazy"/>
