@@ -7,7 +7,7 @@ Diese Belehrung gilt für Verbraucher (§ 13 BGB). Für Käufe als Unternehmer (
 Widerrufsrecht
 Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen.
 Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag, an dem Sie oder ein von Ihnen benannter Dritter, der nicht der Beförderer ist, die Waren in Besitz genommen haben bzw. hat. Bei mehreren getrennt gelieferten Waren einer einheitlichen Bestellung beginnt die Frist mit Erhalt der letzten Ware.
-Um Ihr Widerrufsrecht auszuüben, müssen Sie uns (H & K Projekt UG (haftungsbeschränkt), Lehmkoppel 7, 25499 Tangstedt, Deutschland, Telefon +49 176 60826082, E-Mail bestellungen@sichere-nacht.de) mittels einer eindeutigen Erklärung (zum Beispiel Brief oder E-Mail) über Ihren Entschluss informieren. Sie können das beigefügte Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist.
+Um Ihr Widerrufsrecht auszuüben, müssen Sie uns (H & K Projekt UG (haftungsbeschränkt), Lehmkoppel 7, 25499 Tangstedt, Deutschland, Telefon +49 4101 6012870, E-Mail bestellungen@sichere-nacht.de) mittels einer eindeutigen Erklärung (zum Beispiel Brief oder E-Mail) über Ihren Entschluss informieren. Sie können das beigefügte Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist.
 Sie können Ihren Widerruf auch über https://sichere-nacht.de/widerruf-online erklären. Die Funktion „Vertrag widerrufen“ ist im Fußbereich der Website verlinkt. Sie überprüfen dort Ihre Angaben und übermitteln die Erklärung mit „Widerruf bestätigen“. Wir bestätigen den Eingang unverzüglich elektronisch.
 Zur Wahrung der Frist reicht es aus, dass Sie die Mitteilung vor Ablauf der Widerrufsfrist absenden.
 
