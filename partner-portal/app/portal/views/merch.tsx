@@ -50,7 +50,7 @@ export default function Merch({data,act,reload}:{data:Row;act:Action;reload:()=>
         const workwear=p.id==='strauss-workwear-set';
         const flyer=p.id==='qr-flyer';
         const contactReady=!!String(data.account.full_name||'').trim()&&!!String(data.account.phone||'').trim();
-        const previewPath=flyer&&contactReady?'/api/merch-flyer-preview':p.image_path;
+        const previewPath=p.image_path;
         const chosenSizes=Object.fromEntries(sizeFields.map(([key])=>[key,sizes[key]??(sizeChoices.includes(data.account.clothing_size)?data.account.clothing_size:'')]));
         const sizesReady=!workwear||sizeFields.every(([key])=>sizeChoices.includes(chosenSizes[key]));
         const options:PriceOption[] = Array.isArray(p.price_options) ? p.price_options : [];
@@ -61,7 +61,7 @@ export default function Merch({data,act,reload}:{data:Row;act:Action;reload:()=>
           <p className="eyebrow">{p.kind==='flyer'?'PRINT':p.kind==='card'?'PERSÖNLICH':'TEAMWEAR'}</p>
           <h2>{p.title}</h2>
           {flyer ? <figure className="merchPreview">
-            <div style={{background:'#09172a',color:'#fff',padding:'clamp(20px,5vw,38px)',borderRadius:14,display:'flex',flexDirection:'column',gap:16,aspectRatio:'148 / 210',boxSizing:'border-box',minWidth:0,overflow:'hidden'}}>
+            <div style={{background:'#09172a',color:'#fff',padding:'clamp(20px,5vw,38px)',borderRadius:14,display:'flex',flexDirection:'column',gap:16,aspectRatio:'148 / 210',boxSizing:'border-box',minWidth:0,overflow:'hidden',position:'relative'}} aria-label="Neutrales Flyermuster ohne personenbezogene Daten oder funktionierenden QR-Code">
               <strong style={{fontSize:'clamp(15px,4vw,24px)',letterSpacing:1}}>SICHERE NACHT</strong>
               <span style={{fontSize:11,letterSpacing:2,color:'#fbbf24'}}>SICHERHEIT ZUHAUSE</span>
               <div style={{marginTop:12}}>
@@ -69,17 +69,18 @@ export default function Merch({data,act,reload}:{data:Row;act:Action;reload:()=>
                 <p style={{fontSize:'clamp(12px,3vw,17px)',color:'#cbd5e1'}}>Moderne Alarmtechnik von AJAX. Jetzt informieren und beraten lassen.</p>
               </div>
               <div style={{background:'#fff',color:'#071324',borderRadius:12,padding:'clamp(14px,4vw,25px)',marginTop:'auto',minWidth:0}}>
-                <strong style={{display:'block',fontSize:'clamp(10px,2.8vw,16px)',marginBottom:12}}>DEIN PERSÖNLICHER ANSPRECHPARTNER</strong>
-                <strong style={{display:'block',overflowWrap:'anywhere',fontSize:'clamp(17px,4vw,26px)'}}>{contactReady?String(data.account.full_name):'Dein Vor- und Nachname'}</strong>
-                <span style={{display:'block',overflowWrap:'anywhere',fontSize:'clamp(15px,3.5vw,22px)',marginTop:5}}>{contactReady?String(data.account.phone):'Deine Telefonnummer'}</span>
+                <strong style={{display:'block',fontSize:'clamp(10px,2.8vw,16px)',marginBottom:12}}>PERSÖNLICHE KONTAKTDATEN</strong>
+                <strong style={{display:'block',overflowWrap:'anywhere',fontSize:'clamp(17px,4vw,26px)'}}>Name nach Bestellung</strong>
+                <span style={{display:'block',overflowWrap:'anywhere',fontSize:'clamp(15px,3.5vw,22px)',marginTop:5}}>Telefonnummer nach Bestellung</span>
                 <div style={{display:'flex',alignItems:'center',gap:12,marginTop:14}}>
-                  <img src="/api/merch-flyer-qr" alt="Dein persönlicher Empfehlungs-QR-Code" loading="eager" style={{width:'45%',maxWidth:180,aspectRatio:'1 / 1',objectFit:'contain',background:'#fff',border:'1px solid #e2e8f0'}}/>
-                  <span style={{fontSize:'clamp(11px,2.7vw,16px)',lineHeight:1.4}}>QR-Code scannen<br/>und mehr erfahren</span>
+                  <div aria-label="QR-Platzhalter, nicht scannbar" style={{width:'45%',maxWidth:180,aspectRatio:'1 / 1',background:'#e2e8f0',display:'grid',placeItems:'center',border:'2px dashed #94a3b8',borderRadius:6,color:'#334155',fontSize:14,fontWeight:700}}>QR-MUSTER</div>
+                  <span style={{fontSize:'clamp(11px,2.7vw,16px)',lineHeight:1.4}}>Persönlicher QR-Code erst in der internen Druckdatei</span>
                 </div>
               </div>
-              <small style={{fontSize:10,color:'#cbd5e1'}}>Vorschau · Druckfreigabe vor Produktion erforderlich</small>
+              <span style={{position:'absolute',top:'49%',left:'50%',transform:'translate(-50%,-50%) rotate(-18deg)',fontSize:'clamp(28px,9vw,65px)',fontWeight:900,letterSpacing:5,opacity:.3,pointerEvents:'none'}}>MUSTER</span>
+              <small style={{fontSize:10,color:'#cbd5e1'}}>Unverbindliches Designmuster · Nicht für den Druck geeignet</small>
             </div>
-            <figcaption>Persönliche Vorschau mit Name, Telefonnummer und Empfehlungs-QR. Die finale Druckansicht wird vor Produktion freigegeben.</figcaption>
+            <figcaption>Neutrale Designvorschau ohne Namen, Telefonnummer oder echten QR-Code. Die interne personalisierte Druckvorlage wird erst nach bezahlter Bestellung erstellt.</figcaption>
           </figure> : previewPath && <figure className="merchPreview">
             <a href={previewPath} target="_blank" rel="noopener noreferrer" aria-label={p.title+' – Designvorschau vergrößern'}>
               <img src={previewPath} alt={workwear?'Sechs Teile: eine Winterjacke, eine Softshelljacke, ein Pullover und drei Poloshirts':p.title+' – Vorder- und Rückseite im Sichere-Nacht-Design'} loading="lazy"/>
@@ -87,7 +88,7 @@ export default function Merch({data,act,reload}:{data:Row;act:Action;reload:()=>
             <figcaption>{workwear?'Set-Visualisierung · Alle sechs Teile mit Rückenlogo. Die genaue Druckansicht folgt vor Produktion.':'Designvorschau · QR-Code und Kontaktdaten werden für dich personalisiert.'}</figcaption>
           </figure>}
           <ul className="merchFeatures">{String(p.description).split(/\n+/).filter(Boolean).map((line,i)=><li key={i}>{line.replace(/^[•\-]\s*/,'')}</li>)}</ul>
-          {flyer&&(contactReady?<p className="merchFeatures">Auf deinem Flyer: <strong>{data.account.full_name}</strong> · <strong>{data.account.phone}</strong>. Die Kontaktdaten werden bei der Bestellung automatisch gespeichert. Bitte prüfe sie vor dem Bestellen.</p>:<div className="notice"><p role="alert"><strong>Kontaktdaten fehlen.</strong> Bitte ergänze Vor- und Nachnamen sowie Telefonnummer, bevor du personalisierte Flyer bestellen kannst.</p><form onSubmit={async e=>{e.preventDefault();if(savingContact)return;setSavingContact(true);try{await act('flyer_contact',{name:contact.name,phone:contact.phone});await reload();setNotice('Kontaktdaten gespeichert. Die Flyer-Vorschau wurde aktualisiert.')}catch(error){setNotice(error instanceof Error?error.message:'Kontaktdaten konnten nicht gespeichert werden.')}finally{setSavingContact(false)}}}><label>Vor- und Nachname<input required minLength={3} maxLength={100} value={contact.name} onChange={e=>setContact({...contact,name:e.target.value})}/></label><label>Telefonnummer<input required type="tel" minLength={6} maxLength={40} value={contact.phone} onChange={e=>setContact({...contact,phone:e.target.value})}/></label><button className="button" type="submit" disabled={savingContact}>{savingContact?'Wird gespeichert …':'Kontaktdaten speichern'}</button></form></div>)}
+          {flyer&&(contactReady?<p className="merchFeatures">Für die spätere interne Druckdatei hinterlegt: <strong>{data.account.full_name}</strong> · <strong>{data.account.phone}</strong>. Diese Daten erscheinen nicht in der Shop-Vorschau.</p>:<div className="notice"><p role="alert"><strong>Kontaktdaten fehlen.</strong> Bitte ergänze Vor- und Nachnamen sowie Telefonnummer, bevor du personalisierte Flyer bestellen kannst.</p><form onSubmit={async e=>{e.preventDefault();if(savingContact)return;setSavingContact(true);try{await act('flyer_contact',{name:contact.name,phone:contact.phone});await reload();setNotice('Kontaktdaten gespeichert. Deine Angaben werden für die interne Druckdatei nach der Bestellung verwendet.')}catch(error){setNotice(error instanceof Error?error.message:'Kontaktdaten konnten nicht gespeichert werden.')}finally{setSavingContact(false)}}}><label>Vor- und Nachname<input required minLength={3} maxLength={100} value={contact.name} onChange={e=>setContact({...contact,name:e.target.value})}/></label><label>Telefonnummer<input required type="tel" minLength={6} maxLength={40} value={contact.phone} onChange={e=>setContact({...contact,phone:e.target.value})}/></label><button className="button" type="submit" disabled={savingContact}>{savingContact?'Wird gespeichert …':'Kontaktdaten speichern'}</button></form></div>)}
           <div className="merchPurchase">
             {options.length > 0 && !custom[p.id] ? <>
               <label>{workwear?'Komplettset':'Druckpaket'}
