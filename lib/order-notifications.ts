@@ -29,7 +29,7 @@ export async function dispatchOrderMail(sessionId:string,kind:'confirmation'|'in
     '<div style="border-top:8px solid #c51f2b;padding:26px 28px;background:#151c26;color:white"><strong style="font-size:24px">SICHERE <span style="color:#ee4651">NACHT</span></strong></div>'+
     '<div style="padding:28px"><h1 style="font-size:24px">Vielen Dank für deine Bestellung!</h1><p>Wir haben die Zahlung erhalten und bearbeiten deine Bestellung.</p>'+
     '<p><strong>'+escapeHtml(customerTypeLabels[type])+'</strong>'+(type==='b2b'?'<br/>Unternehmen: '+escapeHtml(o.buyer_company||''):'')+'</p><p>'+escapeHtml(correspondence.notice)+'</p>'+
-    '<p>Wir organisieren die Lieferung an deine angegebene Lieferadresse. Verkäufer, Rechnungsaussteller und Ansprechpartner bleibt H &amp; K Projekt UG (haftungsbeschränkt). Diese Nachricht bestätigt noch keinen Versand oder eine Lieferanten-Auftragsannahme.</p>'+
+    '<p>Sichere-Nacht.de organisiert die Lieferung an deine angegebene Lieferadresse. Die rechtlichen Verkäuferangaben findest du in der beigefügten Auftragsbestätigung. Diese Nachricht bestätigt noch keinen Versand oder eine Lieferanten-Auftragsannahme.</p>'+
     '<p>Die Lieferzeit beträgt 2–4 Werktage nach Zahlungseingang für Artikel mit bestätigter Verfügbarkeit; vor der Bestellung angegebene abweichende Lieferzeiten bleiben maßgeblich.</p>'+
     '<p><strong>Deine Artikel</strong></p><ul>'+o.items.map(i=>'<li>'+i.quantity+' &times; '+escapeHtml(i.name)+'</li>').join('')+'</ul>'+
     '<p style="padding:16px;background:#f5f6f7"><strong>Gesamtbetrag inklusive Versand: '+(o.amount_total/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'})+'</strong></p>'+
