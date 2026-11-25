@@ -46,6 +46,8 @@ export default function Merch({data,act,reload}:{data:Row;act:Action;reload:()=>
     <div className="merchGrid">
       {(data.products||[]).filter((p:Row)=>p.id!=='team-clothing').map((p:Row) => {
         const workwear=p.id==='strauss-workwear-set';
+        const flyer=p.id==='qr-flyer';
+        const previewPath=flyer?'/api/merch-flyer-preview':p.image_path;
         const chosenSizes=Object.fromEntries(sizeFields.map(([key])=>[key,sizes[key]??(sizeChoices.includes(data.account.clothing_size)?data.account.clothing_size:'')]));
         const sizesReady=!workwear||sizeFields.every(([key])=>sizeChoices.includes(chosenSizes[key]));
         const options:PriceOption[] = Array.isArray(p.price_options) ? p.price_options : [];
@@ -55,13 +57,14 @@ export default function Merch({data,act,reload}:{data:Row;act:Action;reload:()=>
         return <article className="card merchCard" key={p.id}>
           <p className="eyebrow">{p.kind==='flyer'?'PRINT':p.kind==='card'?'PERSÖNLICH':'TEAMWEAR'}</p>
           <h2>{p.title}</h2>
-          {p.image_path && <figure className="merchPreview">
-            <a href={p.image_path} target="_blank" rel="noopener noreferrer" aria-label={p.title+' – Designvorschau vergrößern'}>
-              <img src={p.image_path} alt={workwear?'Sechs Teile: eine Winterjacke, eine Softshelljacke, ein Pullover und drei Poloshirts':p.title+' – Vorder- und Rückseite im Sichere-Nacht-Design'} loading="lazy"/>
+          {previewPath && <figure className="merchPreview">
+            <a href={previewPath} target="_blank" rel="noopener noreferrer" aria-label={p.title+' – Designvorschau vergrößern'}>
+              <img src={previewPath} alt={workwear?'Sechs Teile: eine Winterjacke, eine Softshelljacke, ein Pullover und drei Poloshirts':flyer?'Personalisierte Flyer-Vorschau mit Name, Telefonnummer und Empfehlungs-QR':p.title+' – Vorder- und Rückseite im Sichere-Nacht-Design'} loading="lazy"/>
             </a>
-            <figcaption>{workwear?'Set-Visualisierung · Alle sechs Teile mit Rückenlogo. Die genaue Druckansicht folgt vor Produktion.':'Designvorschau · QR-Code und Kontaktdaten werden für dich personalisiert.'}</figcaption>
+            <figcaption>{workwear?'Set-Visualisierung · Alle sechs Teile mit Rückenlogo. Die genaue Druckansicht folgt vor Produktion.':flyer?'Persönliche Vorschau mit Name, Telefonnummer und Empfehlungs-QR. Die finale Druckansicht wird vor Produktion freigegeben.':'Designvorschau · QR-Code und Kontaktdaten werden für dich personalisiert.'}</figcaption>
           </figure>}
           <ul className="merchFeatures">{String(p.description).split(/\n+/).filter(Boolean).map((line,i)=><li key={i}>{line.replace(/^[•\-]\s*/,'')}</li>)}</ul>
+          {flyer&&<p className="merchFeatures">Auf deinem Flyer: <strong>{data.account.full_name}</strong> · <strong>{data.account.phone}</strong>. Diese Kontaktdaten werden bei der Bestellung automatisch gespeichert. Bitte prüfe sie vor dem Bestellen.</p>}
           <div className="merchPurchase">
             {options.length > 0 && !custom[p.id] ? <>
               <label>{workwear?'Komplettset':'Druckpaket'}
