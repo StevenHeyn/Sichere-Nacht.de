@@ -2,7 +2,7 @@
  * No stock, delivery promise, GPSR entity or installation certification is inferred.
  */
 export type AdviceProduct={sku:string;name:string;line?:string;category?:string};
-export type ProductAdvice={technology:string;environment:'Innen'|'Außen geeignet'|'Prüfen';role:string;purpose:string;system:string;limits:string[];installation:string;included:string;extra:string;source:string;reviewed:boolean};
+export type ProductAdvice={technology:string;environment:'Innen'|'Außen geeignet'|'Prüfen';role:string;purpose:string;system:string;limits:string[];installation:string;included:string;extra:string;source:string;standaloneVideo?:boolean;reviewed:boolean};
 const root='https://support.ajax.systems/de/';
 const known:Record<string,ProductAdvice>={};
 function pair(skus:string[],detail:Omit<ProductAdvice,'reviewed'>){for(const sku of skus)known[sku]={...detail,reviewed:true}}
@@ -16,6 +16,85 @@ pair(['38178.07.WH1','38179.07.BL1'],{technology:'Jeweller',environment:'Außen 
 pair(['38111.11.WH1','38110.11.BL1'],{technology:'Jeweller',environment:'Innen',role:'Sirene',purpose:'Akustische Alarmierung im Innenraum.',system:'Kompatibler Ajax-Hub mit Jeweller.',limits:['Nicht als Außensirene verwenden.','Eine Sirene ist kein Ersatz für Melder.'],installation:common,included:'Packungsinhalt der konkreten HomeSiren-Ausführung prüfen.',extra:'Hub und Melder separat.',source:root+'sirens/homesiren/'});
 pair(['38249.12.WH1','38248.12.BL1'],{technology:'Jeweller',environment:'Innen',role:'Bedienteil',purpose:'Scharf-/Unscharfschaltung per Code, abhängig von den vergebenen Berechtigungen.',system:'Kompatibler Ajax-Hub mit Jeweller.',limits:['Dieses KeyPad nicht mit KeyPad Plus oder TouchScreen gleichsetzen.','Tags und Karten benötigen ein dafür geeignetes Bedienteil.'],installation:common+' Bedienort und Eingangsverzögerung aufeinander abstimmen.',included:'KeyPad-Packungsinhalt und Batterieausführung im Handbuch prüfen.',extra:'Hub separat. Nutzerrechte und Codes im System konfigurieren.',source:root+'controls/keypad/'});
 pair(['38255.08.WH1','38254.08.BL1'],{technology:'Jeweller',environment:'Innen',role:'Wassermelder',purpose:'Meldet Wasser an den Kontaktstellen, etwa unter Waschmaschine oder Spüle.',system:'Kompatibler Ajax-Hub mit Jeweller für Systemmeldungen.',limits:['Schließt nicht selbst die Wasserleitung.','Für automatische Absperrung sind geeignete zusätzliche Geräte und eine fachgerechte Installation erforderlich.'],installation:'An einer geeigneten bodennahen Stelle mit erwartbarem Wasserzutritt platzieren; Funktion und Funkverbindung testen.',included:'Melder und Batterieversorgung gemäß konkreter Packungsliste.',extra:'Hub separat. WaterStop bzw. passende Absperrlösung ist nicht Bestandteil dieses Melders.',source:root+'manuals/leaksprotect/'});
+// Each family uses its own manual. Only the catalog variants listed here are reviewed.
+const cameraManuals = 'https://ajax.systems/de/support/manuals/';
+const wiredCameraVariants: Record<string, string[]> = {
+  'bulletcam': [
+    '79024.217.BL1', '79025.217.BL1', '79026.217.BL1', '79027.217.BL1',
+    '79028.217.WH1', '79029.217.WH1', '79030.217.WH1', '79031.217.WH1',
+  ],
+  'turretcam': [
+    '64923.197.WH1', '64924.197.BL1', '64925.197.WH1', '64926.197.BL1',
+    '64927.197.WH1', '64928.197.BL1', '64929.197.WH1', '64930.197.BL1',
+  ],
+  'domecam-mini': [
+    '76018.214.WH1', '76019.214.BL1', '76020.214.WH1', '76021.214.BL1',
+    '76022.214.WH1', '76023.214.BL1', '76024.214.WH1', '76025.214.BL1',
+  ],
+  'bulletcam-hl': [
+    '126252.217.BL1', '126253.217.WH1', '126254.217.BL1', '126255.217.WH1',
+    '126256.217.BL1', '126257.217.WH1', '126258.217.BL1', '126259.217.WH1',
+  ],
+  'turretcam-hl': [
+    '126260.197.BL1', '126261.197.WH1', '126262.197.BL1', '126263.197.WH1',
+    '126264.197.BL1', '126265.197.WH1', '126266.197.BL1', '126267.197.WH1',
+  ],
+  'domecam-mini-hl': [
+    '126268.214.BL1', '126269.214.WH1', '126270.214.BL1', '126271.214.WH1',
+    '126272.214.BL1', '126273.214.WH1', '126274.214.BL1', '126275.214.WH1',
+  ],
+  'bulletcam-hlvf': [
+    '126276.217.BL1', '126277.217.WH1', '126278.217.BL1', '126279.217.WH1',
+  ],
+  'turretcam-hlvf': [
+    '126280.197.BL1', '126281.197.WH1', '126282.197.BL1', '126283.197.WH1',
+  ],
+  'domecam-hlvf': [
+    '126284.214.BL1', '126285.214.WH1', '126286.214.BL1', '126287.214.WH1',
+  ],
+};
+for (const [manual, skus] of Object.entries(wiredCameraVariants)) {
+  pair(skus, {
+    technology: 'Video / Ethernet',
+    standaloneVideo: true,
+    environment: 'Außen geeignet',
+    role: 'Netzwerkkamera',
+    purpose: 'Zeigt Livebilder in der Ajax App. Aufzeichnungen lassen sich auf einer geeigneten microSD-Karte oder einem kompatiblen Videorekorder speichern.',
+    system: 'Die Kamera wird per Ethernet mit dem Netzwerk verbunden und einem Space in der Ajax App hinzugefügt.',
+    limits: ['Für ein Videoarchiv wird ein eingerichteter Speicher benötigt.'],
+    installation: 'Bildausschnitt am Montageort testen und Kabelverbindungen im Außenbereich gegen Feuchtigkeit schützen.',
+    included: 'Kamera in der gewählten Ausführung. Auflösung und Objektiv stehen in der Artikelbezeichnung.',
+    extra: 'Ethernetkabel und passende PoE-Versorgung oder ein geeignetes Netzteil. Speicher separat einplanen.',
+    source: cameraManuals + manual + '/',
+  });
+}
+
+const wifiVideo = {
+  technology: 'Video / WLAN',
+  standaloneVideo: true,
+  system: 'Für Livevideo das Gerät mit dem WLAN verbinden und in der Ajax App einem Space hinzufügen. Ein kompatibler Hub ermöglicht einen zusätzlichen Funkkanal.',
+  limits: ['Am Montageort muss das 2,4-GHz-WLAN für die Videoübertragung ausreichen.'],
+  extra: 'Für ein Videoarchiv einen kompatiblen Ajax Videorekorder oder Ajax Cloud Storage einplanen.',
+};
+pair(['111566.303.WH1', '111567.303.BL1'], {
+  ...wifiVideo,
+  environment: 'Innen',
+  role: 'Innenkamera',
+  purpose: 'Überträgt Livebilder aus Innenräumen in die Ajax App und ermöglicht Gegensprechen.',
+  installation: 'Die Kamera im Innenraum mit Blick auf den gewünschten Bereich ausrichten. Stromanschluss in der Nähe einplanen.',
+  included: 'IndoorCam in der gewählten Gehäusefarbe.',
+  source: cameraManuals + 'indoorcam/',
+});
+pair(['66390.125.WH1', '66391.125.BL1', '66392.125.GP1', '66393.125.GR1'], {
+  ...wifiVideo,
+  environment: 'Außen geeignet',
+  role: 'Videotürklingel',
+  purpose: 'Zeigt in der Ajax App, wer klingelt. Über Mikrofon und Lautsprecher kannst du mit Besuchern sprechen.',
+  installation: 'Vor dem Einbau Stromversorgung, vorhandenen Türgong und WLAN-Empfang am Eingang prüfen.',
+  included: 'DoorBell in der gewählten Gehäusefarbe mit BellKit für einen kompatiblen verdrahteten Gong.',
+  source: cameraManuals + 'doorbell/',
+});
+
 export function productAdvice(p:AdviceProduct):ProductAdvice{
  if(known[p.sku])return known[p.sku];
  const text=p.name+' '+(p.category||'')+' '+(p.line||'');
